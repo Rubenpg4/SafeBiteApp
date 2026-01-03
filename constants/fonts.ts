@@ -11,6 +11,8 @@ export const FontFamily = {
     regular: 'Montserrat_400Regular',
     medium: 'Montserrat_500Medium',
     semibold: 'Montserrat_600SemiBold',
-    bold: 'Montserrat_700Bold',
+    bold: 'Montserrat_700Bold', 
+    black: 'Montserrat_900Black',
+    blackItalic: 'Montserrat_900Black_Italic',
   },
 } as const;
