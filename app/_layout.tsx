@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/contexts/auth';
+import { ProductHistoryProvider } from '@/contexts/productHistory';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -77,7 +78,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <ProductHistoryProvider>
+        <RootLayoutNav />
+      </ProductHistoryProvider>
     </AuthProvider>
   );
 }

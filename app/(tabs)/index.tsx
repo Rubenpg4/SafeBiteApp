@@ -14,13 +14,17 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NoHistoryIcon, ScannerIcon } from '@/components/icons';
+import { HistoryList } from '@/components/product';
 import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants';
 import { useAuth } from '@/contexts/auth';
+import { useProductHistory } from '@/contexts/productHistory';
+import { Product } from '@/types';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { products, isLoading } = useProductHistory();
   const insets = useSafeAreaInsets();
-  const [showDetections, setShowDetections] = useState(true);
+  const [showAllProducts, setShowAllProducts] = useState(true);
 
   const colors = Colors['light'];
 
@@ -46,6 +50,35 @@ export default function HomeScreen() {
   const handleScan = () => {
     showToast('Escanear código de barras próximamente');
   };
+
+  const handleProductPress = (product: Product) => {
+    // TODO: Navegar a pantalla de detalle del producto
+    showToast(`Ver detalles de: ${product.name}`);
+  };
+
+  // Componente para estado vacío
+  const EmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyIconContainer}>
+        <NoHistoryIcon size={60} color={Colors.light.background} />
+      </View>
+
+      <Text style={styles.emptyTitle}>Sin historial aún</Text>
+      <Text style={styles.emptyDescription}>
+        Los productos que escanees{'\n'}
+        aparecerán aquí para un acceso{'\n'}
+        rápido
+      </Text>
+    </View>
+  );
+
+  // Filtrar productos: si el switch está OFF, mostrar solo los aptos (verdes)
+  const filteredProducts = showAllProducts
+    ? products
+    : products.filter(p => p.isSafe);
+
+  // Determina si mostrar la lista o el estado vacío
+  const hasProducts = filteredProducts.length > 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -84,27 +117,24 @@ export default function HomeScreen() {
       <View style={styles.detectionsHeader}>
         <Text style={styles.detectionsTitle}>Últimas detecciones</Text>
         <Switch
-          value={showDetections}
-          onValueChange={setShowDetections}
+          value={showAllProducts}
+          onValueChange={setShowAllProducts}
           trackColor={{ false: '#D1D1D6', true: colors.success }}
           thumbColor={colors.white}
           ios_backgroundColor="#D1D1D6"
         />
       </View>
 
-      {/* Empty State */}
-      <View style={styles.emptyStateContainer}>
-        <View style={styles.emptyIconContainer}>
-          <NoHistoryIcon size={60} color={Colors.light.background} />
-        </View>
-
-        <Text style={styles.emptyTitle}>Sin historial aún</Text>
-        <Text style={styles.emptyDescription}>
-          Los productos que escanees{'\n'}
-          aparecerán aquí para un acceso{'\n'}
-          rápido
-        </Text>
-      </View>
+      {/* Contenido: Lista de productos o estado vacío */}
+      {hasProducts ? (
+        <HistoryList
+          products={filteredProducts}
+          onProductPress={handleProductPress}
+          ListEmptyComponent={<EmptyState />}
+        />
+      ) : (
+        <EmptyState />
+      )}
 
       {/* Botón flotante de escanear */}
       <TouchableOpacity
@@ -148,8 +178,8 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
   },
   headerButton: {
     width: 36,
@@ -173,14 +203,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.sm,
   },
   detectionsTitle: {
     fontFamily: FontFamily.inter.regular,
     fontSize: FontSize.md,
     color: Colors.light.text,
   },
-  // Empty State styles
+  // Estilos del Empty State
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -211,7 +241,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  // Scan Button styles
+  // Estilos del botón de escanear
   scanButton: {
     position: 'absolute',
     right: Spacing.lg,
@@ -226,5 +256,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
+  },
+  // Estilos del Hidden State
+  hiddenStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hiddenStateText: {
+    fontFamily: FontFamily.inter.regular,
+    fontSize: FontSize.md,
+    color: Colors.light.textSecondary,
   },
 });

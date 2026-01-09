@@ -10,7 +10,6 @@ export const ScannerIcon: React.FC<ScannerIconProps> = ({
     size = 48,
     color = '#FFFFFF',
 }) => {
-    // El viewBox original es 960x960, escalamos proporcionalmente
     const scale = size / 48;
 
     return (
