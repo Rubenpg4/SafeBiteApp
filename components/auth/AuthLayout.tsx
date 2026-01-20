@@ -47,6 +47,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 contentContainerStyle={styles.formContent}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
+                bounces={false}
+                scrollEnabled={false}
             >
                 {children}
             </ScrollView>
