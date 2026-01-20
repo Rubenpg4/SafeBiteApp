@@ -161,13 +161,13 @@ export default function RegisterScreen() {
                 />
 
                 <View style={styles.buttonRow}>
-                    <AuthButton title="Registrar" onPress={handleRegister} testID="register-button" loading={isLoading} />
                     <AuthButton
                         title="Volver"
                         onPress={handleGoToLogin}
                         variant="secondary"
                         testID="back-to-login-button"
                     />
+                    <AuthButton title="Registrar" onPress={handleRegister} testID="register-button" loading={isLoading} />
                 </View>
 
                 <View style={styles.separator} />

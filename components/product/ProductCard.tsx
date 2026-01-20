@@ -48,7 +48,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
             >
                 {/* Imagen del producto */}
                 <View style={styles.imageContainer}>
-                    {product.imageUrl ? (
+                    {product.imageSource ? (
+                        <Image
+                            source={product.imageSource}
+                            style={styles.productImage}
+                            resizeMode="contain"
+                        />
+                    ) : product.imageUrl ? (
                         <Image
                             source={{ uri: product.imageUrl }}
                             style={styles.productImage}

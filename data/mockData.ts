@@ -28,7 +28,7 @@ export const MOCK_SCANNED_PRODUCTS: Product[] = [
         barcode: '8410500010041',
         name: 'Leche entera',
         brand: 'Hacendado',
-        imageUrl: 'https://static.carrefour.es/hd_510x_/img_pim_food/100012_00_1.jpg',
+        imageSource: require('@/assets/images/product-leche.png'),
         allergens: [
             { id: 'en:milk', name: 'Lácteos', icon: 'milk' },
         ],
@@ -43,7 +43,7 @@ export const MOCK_SCANNED_PRODUCTS: Product[] = [
         barcode: '8410500010058',
         name: 'Crema de cacahuete',
         brand: 'Hacendado',
-        imageUrl: 'https://prod-mercadona.imgix.net/images/f14e2e4c8795e46e0eb0c22e2f14f7a2.jpg',
+        imageSource: require('@/assets/images/product-cacahuete.png'),
         allergens: [
             { id: 'en:peanuts', name: 'Cacahuetes', icon: 'peanuts' },
             { id: 'en:milk', name: 'Lácteos', icon: 'milk' },
@@ -60,7 +60,7 @@ export const MOCK_SCANNED_PRODUCTS: Product[] = [
         barcode: '8480000591234',
         name: 'Galletas de avena',
         brand: 'Hacendado',
-        imageUrl: 'https://prod-mercadona.imgix.net/images/ad8a6a4c9f5c5d8e5c5e9f9c9a8b7c6d.jpg',
+        imageSource: require('@/assets/images/product-galletas.png'),
         allergens: [
             { id: 'en:gluten', name: 'Gluten', icon: 'gluten' },
         ],

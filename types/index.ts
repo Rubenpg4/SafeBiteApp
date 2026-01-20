@@ -2,6 +2,8 @@
  * TIPOS COMPARTIDOS - SafeBite App
  */
 
+import { ImageSourcePropType } from 'react-native';
+
 /**
  * Representa un alérgeno
  * Los IDs deben coincidir con los de Open Food Facts
@@ -20,7 +22,8 @@ export interface Product {
     barcode: string;               // Código de barras escaneado
     name: string;                  // Nombre del producto
     brand?: string;                // Marca del producto
-    imageUrl?: string;             // URL de la imagen del producto
+    imageUrl?: string;             // URL de la imagen del producto (remota)
+    imageSource?: ImageSourcePropType; // Imagen local con require()
     allergens: Allergen[];         // Lista de alérgenos que contiene el producto
     matchedAllergens: Allergen[];  // Alérgenos que coinciden con los del usuario
     isSafe: boolean;               // true si NO tiene alérgenos del usuario
