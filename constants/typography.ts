@@ -1,5 +1,5 @@
-import { TextStyle } from 'react-native';
-import { FontFamily } from './fonts';
+import { TextStyle } from "react-native";
+import { FontFamily } from "./fonts";
 
 export const FontSize = {
   xs: 12,
