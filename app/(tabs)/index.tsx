@@ -23,6 +23,15 @@ export default function HomeScreen() {
 
       <Pressable
         style={[styles.button, { backgroundColor: colors.success }]}
+        onPress={() => router.push("../profile_screen")}
+      >
+        <Text style={[styles.buttonText, { color: colors.background }]}>
+          Ir a perfil
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.button, { backgroundColor: colors.success }]}
         onPress={() => router.push("../safe_screen")}
       >
         <Text style={[styles.buttonText, { color: colors.background }]}>

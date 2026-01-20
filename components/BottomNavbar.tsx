@@ -20,6 +20,7 @@ type BottomNavbarProps = {
   homeIconSize?: number;
   homeIconColor?: string;
 
+  showSecondaryButton?: boolean;
   secondaryHref?: Href;
   onPressSecondary?: () => void;
   secondaryButtonSize?: number;
@@ -42,6 +43,7 @@ export function BottomNavbar({
   homeIconSize = 50,
   homeIconColor = "#FFFFFF",
 
+  showSecondaryButton = false,
   secondaryHref,
   onPressSecondary,
   secondaryButtonSize = 56,
@@ -53,31 +55,19 @@ export function BottomNavbar({
   const homeRadius = homeButtonSize / 2;
   const secondaryRadius = secondaryButtonSize / 2;
 
-  /*   const SecondaryPressable = (
-    <Pressable
-      onPress={onPressSecondary}
-      disabled={!onPressSecondary && !secondaryHref}
-      style={[
-        styles.secondaryButton,
-        {
-          right: sideOffset,
-          bottom: bottomOffset + 8,
-          width: secondaryButtonSize,
-          height: secondaryButtonSize,
-          borderRadius: secondaryRadius,
-          backgroundColor: buttonColor,
-        },
-      ]}
-      accessibilityRole="button"
-      accessibilityLabel={secondaryA11yLabel}
-    >
-      <MaterialIcons
-        name={secondaryIconName}
-        size={secondaryIconSize}
-        color={secondaryIconColor}
-      />
-    </Pressable>
-  ); */
+  const handleSecondaryPress = () => {
+    if (onPressSecondary) {
+      onPressSecondary();
+      return;
+    }
+
+    if (secondaryHref) {
+      router.push(secondaryHref);
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <View pointerEvents="box-none" style={[styles.container, { height }]}>
@@ -112,30 +102,32 @@ export function BottomNavbar({
         </Pressable>
 
         {/* Botón derecho */}
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            {
-              right: sideOffset,
-              transform: [{ scale: pressed ? 0.985 : 1 }],
-              bottom: pressed ? bottomOffset + 7 : bottomOffset + 8,
-              width: secondaryButtonSize,
-              height: secondaryButtonSize,
-              borderRadius: secondaryRadius,
-              backgroundColor: buttonColor,
-              shadowOpacity: pressed ? 0.1 : 0.14,
-            },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={secondaryA11yLabel}
-        >
-          <MaterialIcons
-            name={secondaryIconName}
-            size={secondaryIconSize}
-            color={secondaryIconColor}
-          />
-        </Pressable>
+        {showSecondaryButton ? (
+          <Pressable
+            onPress={handleSecondaryPress}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              {
+                right: sideOffset,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+                bottom: pressed ? bottomOffset + 7 : bottomOffset + 8,
+                width: secondaryButtonSize,
+                height: secondaryButtonSize,
+                borderRadius: secondaryRadius,
+                backgroundColor: buttonColor,
+                shadowOpacity: pressed ? 0.1 : 0.14,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={secondaryA11yLabel}
+          >
+            <MaterialIcons
+              name={secondaryIconName}
+              size={secondaryIconSize}
+              color={secondaryIconColor}
+            />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

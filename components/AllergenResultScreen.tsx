@@ -97,6 +97,7 @@ export function AllergenResultScreen({
       <BottomNavbar
         buttonColor={accentColor}
         homeHref="/(tabs)"
+        showSecondaryButton={true}
         secondaryIconName="autorenew"
         onPressSecondary={onPressSecondary}
       />
