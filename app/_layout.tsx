@@ -37,6 +37,11 @@ function RootLayoutNav() {
     if (loading) return;
 
     const inTabsGroup = segments[0] === '(tabs)';
+    const inOnboarding = segments[0] === 'onboarding';
+    const inAuth = segments[0] === 'login' || segments[0] === 'register';
+
+    // Si el usuario está en onboarding, no hacer redirección automática
+    if (inOnboarding) return;
 
     if (user && !inTabsGroup) {
       router.replace('/(tabs)');
@@ -48,6 +53,9 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/index" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="onboarding/allergies" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="register" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

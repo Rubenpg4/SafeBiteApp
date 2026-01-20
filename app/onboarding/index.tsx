@@ -1,5 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     FlatList,
@@ -38,6 +39,7 @@ const slides = [
         title: 'Detección inmediata',
         description: 'Alertas personalizadas para los 14 alérgenos de declaración obligatoria en la UE',
         image: Image.resolveAssetSource(OnBoarding3).uri,
+        isThirdScreen: true,
     },
 ];
 
@@ -57,6 +59,28 @@ export default function OnboardingScreen() {
 
     const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+    // Animación de flotación para la primera imagen
+    const floatAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const floatAnimation = Animated.loop(
+            Animated.sequence([
+                Animated.timing(floatAnim, {
+                    toValue: -15,
+                    duration: 2000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(floatAnim, {
+                    toValue: 0,
+                    duration: 2000,
+                    useNativeDriver: true,
+                }),
+            ])
+        );
+        floatAnimation.start();
+        return () => floatAnimation.stop();
+    }, [floatAnim]);
+
     const handleNext = () => {
         // Navegar a la pantalla de selección de alergias
         router.replace('/onboarding/allergies');
@@ -74,9 +98,42 @@ export default function OnboardingScreen() {
         <View style={[styles.itemContainer, { width }]}>
             {/* Zona de Imagen (Flex 0.6) */}
             <View style={styles.imageContainer}>
-                <Image
-                    source={{ uri: item.image }}
-                    style={[styles.image, { resizeMode: 'contain' }]}
+                {item.isFirstScreen ? (
+                    // Primera pantalla con animación de flotación
+                    <Animated.Image
+                        source={{ uri: item.image }}
+                        style={[
+                            styles.imageSmall,
+                            {
+                                resizeMode: 'contain',
+                                transform: [{ translateY: floatAnim }]
+                            }
+                        ]}
+                    />
+                ) : item.isThirdScreen ? (
+                    // Tercera pantalla: un poco más pequeña y subida
+                    <Image
+                        source={{ uri: item.image }}
+                        style={[styles.imageThird, { resizeMode: 'contain' }]}
+                    />
+                ) : (
+                    // Otras pantallas sin animación
+                    <Image
+                        source={{ uri: item.image }}
+                        style={[styles.image, { resizeMode: 'contain' }]}
+                    />
+                )}
+                {/* Gradiente superior para difuminar */}
+                <LinearGradient
+                    colors={[Colors.light.background, 'rgba(244,249,248,0.6)', 'transparent']}
+                    locations={[0, 0.4, 1]}
+                    style={styles.fadeGradientTop}
+                />
+                {/* Gradiente inferior para difuminar */}
+                <LinearGradient
+                    colors={['transparent', 'rgba(244,249,248,0.6)', Colors.light.background]}
+                    locations={[0, 0.6, 1]}
+                    style={styles.fadeGradientBottom}
                 />
             </View>
 
@@ -151,9 +208,6 @@ export default function OnboardingScreen() {
                         {currentIndex === slides.length - 1 ? 'Empezar' : 'Siguiente'}
                     </Text>
                 </TouchableOpacity>
-
-                {/* Indicador visual de barra inferior */}
-                <View style={styles.homeIndicator} />
             </View>
         </SafeAreaView>
     );
@@ -162,24 +216,24 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.background, // Usando constante
+        backgroundColor: Colors.light.background, 
     },
     header: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        paddingTop: 10,
-        height: 50,
+        paddingTop: 40,
+        height: 70,
         alignItems: 'center',
     },
     skipButton: {
-        backgroundColor: Colors.light.success, // Usando constante (verde)
+        backgroundColor: Colors.light.success, 
         paddingVertical: 6,
         paddingHorizontal: 16,
         borderRadius: 20,
     },
     skipText: {
         color: Colors.light.white,
-        fontFamily: FontFamily.inter.semibold, // Usando fuente
+        fontFamily: FontFamily.inter.semibold, 
         fontSize: 14,
     },
     itemContainer: {
@@ -192,11 +246,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
-        padding: 0, // Removed padding for full width
+        padding: 0,
+        position: 'relative',
     },
     image: {
-        width: '100%', // Full width
+        width: '100%',
         height: '100%',
+    },
+    imageSmall: {
+        width: '70%',
+        height: '70%',
+    },
+    imageThird: {
+        width: '90%',
+        height: '90%',
+        marginTop: -30,
+    },
+    fadeGradientTop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 80,
+    },
+    fadeGradientBottom: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 80,
     },
     textContainer: {
         flex: 0.4,
@@ -218,10 +296,11 @@ const styles = StyleSheet.create({
         fontFamily: FontFamily.inter.regular, // Usando fuente cuerpo
     },
     footer: {
-        height: 150,
+        height: 120,
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         alignItems: 'center',
+        paddingBottom: 20,
     },
     paginatorContainer: {
         flexDirection: 'row',
@@ -257,12 +336,4 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: FontFamily.inter.semibold,
     },
-    homeIndicator: {
-        width: 134,
-        height: 5,
-        backgroundColor: Colors.light.text,
-        borderRadius: 100,
-        marginBottom: 10,
-        opacity: 0.2 // Reducido opacidad para que no sea tan fuerte
-    }
 });

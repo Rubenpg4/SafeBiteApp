@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/colors';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     Dimensions,
     SafeAreaView,
@@ -87,7 +87,8 @@ export default function AllergySelectionScreen() {
 
     const handleStartPress = () => {
         console.log("Alergias seleccionadas para enviar:", selectedAllergies);
-        router.replace('/(tabs)');
+        // TODO: Guardar las alergias seleccionadas en AsyncStorage o contexto
+        router.replace('/login');
     };
 
     return (
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         paddingHorizontal: 24,
-        paddingTop: 20,
+        paddingTop: 50,
         paddingBottom: 30,
     },
     title: {
