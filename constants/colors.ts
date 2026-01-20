@@ -9,6 +9,8 @@ export const Colors = {
     successLight: 'rgba(128, 199, 185, 0.15)',
     warning: '#E5B75C',
     icon: '#687076',
+    shadow: '#000000',
+    paginationInactive: '#999999',
   },
   dark: {
     text: '#1A1A1A',
