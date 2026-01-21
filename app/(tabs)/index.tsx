@@ -47,6 +47,15 @@ export default function HomeScreen() {
           Ir a danger Screen
         </Text>
       </Pressable>
+
+      <Pressable
+        style={[styles.button, { backgroundColor: colors.danger }]}
+        onPress={() => router.push("../scan_screen")}
+      >
+        <Text style={[styles.buttonText, { color: colors.background }]}>
+          Ir a scan Screen
+        </Text>
+      </Pressable>
     </View>
   );
 }

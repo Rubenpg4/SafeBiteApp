@@ -41,7 +41,13 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir a SafeBite acceder a tu cámara para escanear productos"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
