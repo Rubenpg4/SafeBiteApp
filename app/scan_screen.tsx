@@ -1,20 +1,20 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
-    BarcodeScanningResult,
-    CameraType,
-    CameraView,
-    useCameraPermissions,
+  BarcodeScanningResult,
+  CameraType,
+  CameraView,
+  useCameraPermissions,
 } from "expo-camera";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -116,9 +116,10 @@ export default function ScanScreen() {
         icon: allergenIconMap[tag] || "alert-circle",
       }));
 
-      // Navegar a safe_screen con los datos del producto
+      // Siempre navegar a warning_screen para mostrar los alérgenos detectados
+      // (No tenemos forma de saber si son peligrosos sin usuario logueado)
       router.push({
-        pathname: "/safe_screen",
+        pathname: "/warning_screen",
         params: {
           productName: product.product_name || "Producto desconocido",
           productBrand: product.brands || "Marca desconocida",
@@ -196,8 +197,9 @@ export default function ScanScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      {/* Camera sin children */}
       <CameraView
-        style={styles.camera}
+        style={StyleSheet.absoluteFill}
         facing={facing}
         onBarcodeScanned={isScanning ? undefined : handleBarcodeScanned}
         barcodeScannerSettings={{
@@ -210,7 +212,10 @@ export default function ScanScreen() {
             "code39",
           ],
         }}
-      >
+      />
+
+      {/* Overlay UI con posicionamiento absoluto */}
+      <View style={[StyleSheet.absoluteFill, styles.overlay]}>
         {/* Header con botón de volver */}
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
@@ -253,7 +258,7 @@ export default function ScanScreen() {
             <Text style={styles.controlLabel}>Girar</Text>
           </TouchableOpacity>
         </View>
-      </CameraView>
+      </View>
     </View>
   );
 }
@@ -273,6 +278,9 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     width: "100%",
+  },
+  overlay: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
