@@ -88,7 +88,7 @@ export default function LoginScreen() {
     };
 
     const handleScanBarcode = () => {
-        showToast('Próximamente');
+        router.push('/scan_screen');
     };
 
     return (
