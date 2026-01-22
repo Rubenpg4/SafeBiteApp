@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import {
@@ -21,6 +22,7 @@ import { useProductHistory } from '@/contexts/productHistory';
 import { Product } from '@/types';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { products, isLoading } = useProductHistory();
   const insets = useSafeAreaInsets();
@@ -72,7 +74,7 @@ export default function HomeScreen() {
   };
 
   const handleScan = () => {
-    showToast('Escanear código de barras próximamente');
+    router.push('/scan_screen');
   };
 
   const handleProductPress = (product: Product) => {

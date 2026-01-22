@@ -82,8 +82,8 @@ export default function OnboardingScreen() {
     }, [floatAnim]);
 
     const handleNext = () => {
-        // Navegar a la pantalla de selección de alergias
-        router.replace('/onboarding/allergies');
+        // Navegar a la pantalla de login
+        router.replace('/login');
     };
 
     const scrollToNext = () => {
@@ -216,7 +216,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.background, 
+        backgroundColor: Colors.light.background,
     },
     header: {
         flexDirection: 'row',
@@ -226,14 +226,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     skipButton: {
-        backgroundColor: Colors.light.success, 
+        backgroundColor: Colors.light.success,
         paddingVertical: 6,
         paddingHorizontal: 16,
         borderRadius: 20,
     },
     skipText: {
         color: Colors.light.white,
-        fontFamily: FontFamily.inter.semibold, 
+        fontFamily: FontFamily.inter.semibold,
         fontSize: 14,
     },
     itemContainer: {
