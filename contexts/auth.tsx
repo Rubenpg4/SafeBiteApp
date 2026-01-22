@@ -1,5 +1,6 @@
 
 import { auth } from '@/config/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
@@ -11,12 +12,17 @@ import {
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 
+const ALLERGIES_SETUP_KEY = 'allergies_setup_complete';
+
 interface AuthContextType {
     user: User | null;
     loading: boolean;
+    hasCompletedAllergiesSetup: boolean;
     signIn: (email: string, pass: string) => Promise<void>;
     signUp: (email: string, pass: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
+    setAllergiesSetupComplete: () => Promise<void>;
+    checkAllergiesSetup: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -27,13 +33,37 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasCompletedAllergiesSetup, setHasCompletedAllergiesSetup] = useState(false);
     // Flag para evitar redirección durante el proceso de registro
     const isRegisteringRef = useRef(false);
+
+    // Verificar si el usuario ya completó la configuración de alergias
+    const checkAllergiesSetup = async (): Promise<boolean> => {
+        try {
+            const value = await AsyncStorage.getItem(ALLERGIES_SETUP_KEY);
+            const isComplete = value === 'true';
+            setHasCompletedAllergiesSetup(isComplete);
+            return isComplete;
+        } catch (error) {
+            console.error('Error checking allergies setup:', error);
+            return false;
+        }
+    };
+
+    // Marcar la configuración de alergias como completada
+    const setAllergiesSetupComplete = async (): Promise<void> => {
+        try {
+            await AsyncStorage.setItem(ALLERGIES_SETUP_KEY, 'true');
+            setHasCompletedAllergiesSetup(true);
+        } catch (error) {
+            console.error('Error saving allergies setup:', error);
+        }
+    };
 
     useEffect(() => {
         // Escuchar cambios en la autenticación
         // Solo considerar como usuario logueado si el email está verificado
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             // Si estamos en proceso de registro, ignorar este evento
             if (isRegisteringRef.current) {
                 setLoading(false);
@@ -42,6 +72,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (firebaseUser && firebaseUser.emailVerified) {
                 setUser(firebaseUser);
+                // Verificar si ya completó la configuración de alergias
+                await checkAllergiesSetup();
             } else {
                 setUser(null);
             }
@@ -63,6 +95,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             (error as any).code = 'auth/email-not-verified';
             throw error;
         }
+
+        // Verificar configuración de alergias después del login
+        await checkAllergiesSetup();
     };
 
     const signUp = async (email: string, pass: string, name: string) => {
@@ -94,9 +129,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const value = {
         user,
         loading,
+        hasCompletedAllergiesSetup,
         signIn,
         signUp,
-        logout
+        logout,
+        setAllergiesSetupComplete,
+        checkAllergiesSetup
     };
 
     return (

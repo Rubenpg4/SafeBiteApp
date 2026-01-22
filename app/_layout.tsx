@@ -29,7 +29,7 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { user, loading } = useAuth();
+  const { user, loading, hasCompletedAllergiesSetup } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -38,17 +38,26 @@ function RootLayoutNav() {
 
     const inTabsGroup = segments[0] === '(tabs)';
     const inOnboarding = segments[0] === 'onboarding';
+    const inAllergies = segments[0] === 'onboarding' && segments[1] === 'allergies';
     const inAuth = segments[0] === 'login' || segments[0] === 'register';
 
-    // Si el usuario está en onboarding, no hacer redirección automática
-    if (inOnboarding) return;
+    // Si el usuario está en el onboarding inicial (carrusel), no hacer redirección
+    if (inOnboarding && !inAllergies) return;
 
-    if (user && !inTabsGroup) {
-      router.replace('/(tabs)');
-    } else if (!user && inTabsGroup) {
+    if (user) {
+      // Usuario logueado
+      if (!hasCompletedAllergiesSetup && !inAllergies) {
+        // Primera vez: ir a selección de alergias
+        router.replace('/onboarding/allergies');
+      } else if (hasCompletedAllergiesSetup && !inTabsGroup) {
+        // Ya tiene alergias configuradas: ir a home
+        router.replace('/(tabs)');
+      }
+    } else if (!user && (inTabsGroup || inAllergies)) {
+      // No logueado intentando acceder a área protegida
       router.replace('/login');
     }
-  }, [user, loading, segments]);
+  }, [user, loading, hasCompletedAllergiesSetup, segments]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
