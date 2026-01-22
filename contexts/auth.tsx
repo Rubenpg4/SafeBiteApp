@@ -22,7 +22,7 @@ interface AuthContextType {
     signUp: (email: string, pass: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
     setAllergiesSetupComplete: () => Promise<void>;
-    checkAllergiesSetup: () => Promise<boolean>;
+    checkAllergiesSetup: (userId?: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -38,9 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const isRegisteringRef = useRef(false);
 
     // Verificar si el usuario ya completó la configuración de alergias
-    const checkAllergiesSetup = async (): Promise<boolean> => {
+    const checkAllergiesSetup = async (userId?: string): Promise<boolean> => {
         try {
-            const value = await AsyncStorage.getItem(ALLERGIES_SETUP_KEY);
+            const uid = userId || user?.uid;
+            if (!uid) return false;
+
+            const key = `${ALLERGIES_SETUP_KEY}_${uid}`;
+            const value = await AsyncStorage.getItem(key);
             const isComplete = value === 'true';
             setHasCompletedAllergiesSetup(isComplete);
             return isComplete;
@@ -53,7 +57,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Marcar la configuración de alergias como completada
     const setAllergiesSetupComplete = async (): Promise<void> => {
         try {
-            await AsyncStorage.setItem(ALLERGIES_SETUP_KEY, 'true');
+            if (!user?.uid) return;
+            const key = `${ALLERGIES_SETUP_KEY}_${user.uid}`;
+            await AsyncStorage.setItem(key, 'true');
             setHasCompletedAllergiesSetup(true);
         } catch (error) {
             console.error('Error saving allergies setup:', error);
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (firebaseUser && firebaseUser.emailVerified) {
                 setUser(firebaseUser);
                 // Verificar si ya completó la configuración de alergias
-                await checkAllergiesSetup();
+                await checkAllergiesSetup(firebaseUser.uid);
             } else {
                 setUser(null);
             }
@@ -97,7 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         // Verificar configuración de alergias después del login
-        await checkAllergiesSetup();
+        await checkAllergiesSetup(userCredential.user.uid);
     };
 
     const signUp = async (email: string, pass: string, name: string) => {

@@ -27,8 +27,6 @@ export default function HomeScreen() {
   const { products, isLoading } = useProductHistory();
   const insets = useSafeAreaInsets();
   const [showAllProducts, setShowAllProducts] = useState(true);
-  // Estado para pruebas: alternar entre empty state y mock data
-  const [devShowMock, setDevShowMock] = useState(false);
 
   const colors = Colors['light'];
 
@@ -48,29 +46,7 @@ export default function HomeScreen() {
   };
 
   const handleSettings = () => {
-    Alert.alert(
-      'Ajustes',
-      '¿Qué deseas hacer?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Cerrar sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              // La redirección al login se maneja automáticamente en _layout.tsx
-            } catch (error) {
-              Alert.alert('Error', 'No se pudo cerrar la sesión');
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+    router.push('/profile_screen');
   };
 
   const handleScan = () => {
@@ -104,8 +80,7 @@ export default function HomeScreen() {
     : products.filter(p => p.isSafe);
 
   // Determina si mostrar la lista o el estado vacío
-  // En modo dev, usamos devShowMock para alternar manualmente
-  const hasProducts = devShowMock && filteredProducts.length > 0;
+  const hasProducts = filteredProducts.length > 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -170,18 +145,6 @@ export default function HomeScreen() {
         activeOpacity={0.8}
       >
         <ScannerIcon size={32} color={Colors.light.white} />
-      </TouchableOpacity>
-
-      {/* Botón de desarrollo para alternar entre empty state y mock data */}
-      <TouchableOpacity
-        style={[styles.devButton, { bottom: insets.bottom + 24 }]}
-        onPress={() => setDevShowMock(!devShowMock)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="construct" size={16} color={Colors.light.white} />
-        <Text style={styles.devButtonText}>
-          {devShowMock ? 'Mock' : 'Empty'}
-        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -295,6 +258,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 100,
   },
   // Botón de desarrollo para pruebas
   devButton: {

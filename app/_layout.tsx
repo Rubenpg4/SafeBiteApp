@@ -21,6 +21,7 @@ import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/contexts/auth';
 import { ProductHistoryProvider } from '@/contexts/productHistory';
+import { UserPreferencesProvider } from '@/contexts/userPreferences';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
@@ -41,6 +42,10 @@ function RootLayoutNav() {
     const inAllergies = segments[0] === 'onboarding' && segments[1] === 'allergies';
     const inAuth = segments[0] === 'login' || segments[0] === 'register';
 
+    // Pantallas sueltas que requieren autenticación
+    const protectedScreens = ['safe_screen', 'danger_screen', 'warning_screen', 'profile_screen', 'scan_screen'];
+    const isProtectedScreen = protectedScreens.includes(segments[0] as string);
+
     // Si el usuario está en el onboarding inicial (carrusel), no hacer redirección
     if (inOnboarding && !inAllergies) return;
 
@@ -49,11 +54,12 @@ function RootLayoutNav() {
       if (!hasCompletedAllergiesSetup && !inAllergies) {
         // Primera vez: ir a selección de alergias
         router.replace('/onboarding/allergies');
-      } else if (hasCompletedAllergiesSetup && !inTabsGroup) {
-        // Ya tiene alergias configuradas: ir a home
+      } else if (hasCompletedAllergiesSetup && (inAuth || inOnboarding)) {
+        // Si ya tiene todo listo y está intentar entrar a auth/onboarding -> mandar al home
+        // PERO permitir estar en otras pantallas como scan_screen, profile, etc.
         router.replace('/(tabs)');
       }
-    } else if (!user && (inTabsGroup || inAllergies)) {
+    } else if (!user && (inTabsGroup || inAllergies || isProtectedScreen)) {
       // No logueado intentando acceder a área protegida
       router.replace('/login');
     }
@@ -101,9 +107,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ProductHistoryProvider>
-        <RootLayoutNav />
-      </ProductHistoryProvider>
+      <UserPreferencesProvider>
+        <ProductHistoryProvider>
+          <RootLayoutNav />
+        </ProductHistoryProvider>
+      </UserPreferencesProvider>
     </AuthProvider>
   );
 }

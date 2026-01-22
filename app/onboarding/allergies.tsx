@@ -1,7 +1,8 @@
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/auth';
+import { useUserPreferences } from '@/contexts/userPreferences';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     Dimensions,
@@ -14,8 +15,6 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-// Removing fixed item width calculation
-
 
 // Using existing project constants + defining local specific ones using values from user request
 const theme = Colors.light;
@@ -76,7 +75,9 @@ const AllergyItem = ({ item, isSelected, onPress }: { item: AllergyItemType, isS
 
 export default function AllergySelectionScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ fromRegistration?: string; email?: string; password?: string }>();
     const { setAllergiesSetupComplete } = useAuth();
+    const { updateUserAllergens } = useUserPreferences();
     const [selectedAllergies, setSelectedAllergies] = useState(['9', '10', '11', '14']);
 
     const toggleAllergy = (id: string) => {
@@ -90,10 +91,10 @@ export default function AllergySelectionScreen() {
     const handleStartPress = async () => {
         console.log("Alergias seleccionadas para enviar:", selectedAllergies);
 
-        // TODO: Guardar las alergias seleccionadas en Firebase
-        // Por ahora solo marcamos que el setup está completo
+        // Guardar preferencias del usuario (esto ya usa AsyncStorage internamente)
+        await updateUserAllergens(selectedAllergies);
 
-        // Marcar que ya se completó la configuración de alergias
+        // Marcar que ya se completó la configuración inicial
         await setAllergiesSetupComplete();
 
         // Navegar a la pantalla principal

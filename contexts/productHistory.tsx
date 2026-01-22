@@ -1,141 +1,183 @@
 /**
  * CONTEXTO DE HISTORIAL DE PRODUCTOS
- * 
- * Este contexto maneja el estado de los productos escaneados.
- * Por ahora usa datos mock, pero está preparado para conectar con:
- * - La API de Open Food Facts ( Scanner/API)
- * - Los alérgenos del usuario ( Onboarding)
- * 
  */
 
-import React, { createContext, useCallback, useContext, useState } from 'react';
-
-import { MOCK_SCANNED_PRODUCTS, MOCK_USER_ALLERGENS } from '@/data/mockData';
+import { ALLERGENS_DATA } from '@/constants/allergens';
 import { Allergen, Product, ProductHistoryState } from '@/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useUserPreferences } from './userPreferences';
+
+const PRODUCT_HISTORY_KEY = 'scanned_products_history';
+
+// Mapeo de API tags a nuestros IDs (Solo necesitamos el ID, el resto está en constants/allergens.ts)
+const ALLERGEN_MAP: Record<string, string> = {
+    'en:gluten': '1',
+    'en:crustaceans': '2',
+    'en:eggs': '3',
+    'en:fish': '4',
+    'en:nuts': '5',
+    'en:celery': '6',
+    'en:mustard': '7',
+    'en:sesame-seeds': '8',
+    'en:peanuts': '9',
+    'en:soybeans': '10',
+    'en:milk': '11',
+    'en:sulphur-dioxide-and-sulphites': '12',
+    'en:molluscs': '13',
+    'en:lupin': '14',
+};
 
 interface ProductHistoryContextType extends ProductHistoryState {
-    /** Añade un producto escaneado al historial */
     addProduct: (product: Product) => void;
-    /** Elimina un producto del historial */
     removeProduct: (productId: string) => void;
-    /** Limpia todo el historial */
     clearHistory: () => void;
-    /**
-     * FUNCIÓN PARA CONECTAR CON LA API DE OPEN FOOD FACTS
-     * 
-     * TODO: Implementar esta función
-     * 
-     * @param barcode - Código de barras escaneado
-     * @returns Producto procesado con información de compatibilidad
-     */
     scanAndAddProduct: (barcode: string) => Promise<Product | null>;
 }
 
 const ProductHistoryContext = createContext<ProductHistoryContextType | undefined>(undefined);
 
-interface ProductHistoryProviderProps {
-    children: React.ReactNode;
-    /**
-     * PROP PARA RECIBIR ALÉRGENOS DEL USUARIO
-     * 
-     * TODO: Pasar los alérgenos del usuario aquí
-     * Ejemplo: <ProductHistoryProvider userAllergens={userAllergens}>
-     * 
-     * Por defecto usa MOCK_USER_ALLERGENS para desarrollo
-     */
-    userAllergens?: Allergen[];
-}
-
-export const ProductHistoryProvider: React.FC<ProductHistoryProviderProps> = ({
-    children,
-    userAllergens = MOCK_USER_ALLERGENS, // Mock por defecto
-}) => {
-    // Estado inicial con productos mock para demostración
-    // Cambiar a [] cuando se conecte con la API real
-    const [products, setProducts] = useState<Product[]>(MOCK_SCANNED_PRODUCTS);
+export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { userAllergens } = useUserPreferences();
+    const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Cargar historial al iniciar
+    useEffect(() => {
+        loadHistory();
+    }, []);
+
+    const loadHistory = async () => {
+        try {
+            const savedHistory = await AsyncStorage.getItem(PRODUCT_HISTORY_KEY);
+            if (savedHistory) {
+                // Parseamos los datos y convertimos las fechas de string a Date
+                const parsedProducts = JSON.parse(savedHistory).map((p: any) => ({
+                    ...p,
+                    scannedAt: new Date(p.scannedAt), // Restaurar objeto Date
+                }));
+                setProducts(parsedProducts);
+            }
+        } catch (error) {
+            console.error('Error loading history:', error);
+        }
+    };
+
+    const saveHistory = async (newProducts: Product[]) => {
+        try {
+            await AsyncStorage.setItem(PRODUCT_HISTORY_KEY, JSON.stringify(newProducts));
+        } catch (error) {
+            console.error('Error saving history:', error);
+        }
+    };
 
     /**
      * Calcula qué alérgenos del producto coinciden con los del usuario
      */
-    const calculateMatchedAllergens = useCallback((productAllergens: Allergen[]): Allergen[] => {
-        return productAllergens.filter(productAllergen =>
-            userAllergens.some(userAllergen => userAllergen.id === productAllergen.id)
-        );
+    const calculateMatchedAllergens = useCallback((productAllergenIds: string[]): Allergen[] => {
+        const matches: Allergen[] = [];
+
+        productAllergenIds.forEach(id => {
+            if (userAllergens.includes(id)) {
+                const def = ALLERGENS_DATA[id];
+                if (def) {
+                    // El icono lo maneja la UI con el ID, aquí pasamos un placeholder o el ID mismo si cambiáramos el tipo
+                    matches.push({ id: def.id, name: def.label, icon: 'alert' });
+                }
+            }
+        });
+
+        return matches;
     }, [userAllergens]);
 
-    /**
-     * Añade un producto al historial
-     */
     const addProduct = useCallback((product: Product) => {
-        setProducts(prev => [product, ...prev]); // Más reciente primero
+        setProducts(prev => {
+            const updated = [product, ...prev];
+            saveHistory(updated);
+            return updated;
+        });
     }, []);
 
-    /**
-     * Elimina un producto del historial
-     */
     const removeProduct = useCallback((productId: string) => {
-        setProducts(prev => prev.filter(p => p.id !== productId));
+        setProducts(prev => {
+            const updated = prev.filter(p => p.id !== productId);
+            saveHistory(updated);
+            return updated;
+        });
     }, []);
 
-    /**
-     * Limpia todo el historial
-     */
     const clearHistory = useCallback(() => {
         setProducts([]);
+        saveHistory([]);
     }, []);
 
     /**
-     * ESCANEA Y AÑADE UN PRODUCTO
-     * 
-     * TODO: Implementar llamada real a Open Food Facts aquí
-     * 
-     * Esta función debe:
-     * 1. Llamar a la API de Open Food Facts con el barcode
-     * 2. Parsear la respuesta (allergens_tags)
-     * 3. Calcular matchedAllergens con los alérgenos del usuario
-     * 4. Determinar si es isSafe
-     * 5. Añadir al historial
+     * LLAMADA REAL A LA API Y LÓGICA DE NEGOCIO
      */
     const scanAndAddProduct = useCallback(async (barcode: string): Promise<Product | null> => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // TODO: REEMPLAZAR ESTE MOCK CON LA LLAMADA REAL A LA API      
+            // 1. Fetch OpenFoodFacts
+            const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+            const data = await response.json();
 
-            // Mock: Simular delay de red
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (data.status !== 1 || !data.product) {
+                throw new Error('Producto no encontrado');
+            }
 
-            // Mock: Crear producto de ejemplo
-            const mockAllergens: Allergen[] = [
-                { id: 'en:milk', name: 'Lácteos', icon: 'milk' },
-            ];
+            const productData = data.product;
 
-            const matchedAllergens = calculateMatchedAllergens(mockAllergens);
+            // 2. Extraer y traducir alérgenos
+            const rawTags = productData.allergens_tags || [];
+            const productAllergens: Allergen[] = [];
+            const productAllergenIds: string[] = [];
+
+            rawTags.forEach((tag: string) => {
+                const mappedId = ALLERGEN_MAP[tag];
+                if (mappedId) {
+                    productAllergenIds.push(mappedId);
+                    const def = ALLERGENS_DATA[mappedId];
+                    if (def) {
+                        productAllergens.push({ id: def.id, name: def.label, icon: 'alert' });
+                    }
+                }
+            });
+
+            // 3. Comparar con preferencias del usuario
+            const matchedAllergens = calculateMatchedAllergens(productAllergenIds);
+
+            // isSafe si NO hay coincidencias
+            const isSafe = matchedAllergens.length === 0;
 
             const newProduct: Product = {
-                id: Date.now().toString(),
+                id: Date.now().toString(), // ID único local
                 barcode,
-                name: `Producto ${barcode.slice(-4)}`,
-                brand: 'Marca ejemplo',
-                allergens: mockAllergens,
-                matchedAllergens,
-                isSafe: matchedAllergens.length === 0,
+                name: productData.product_name || 'Producto desconocido',
+                brand: productData.brands || 'Marca desconocida',
+                imageUrl: productData.image_front_url || productData.image_url,
+                allergens: productAllergens, // Todos los alérgenos del producto
+                matchedAllergens: matchedAllergens, // Los que son peligrosos para el usuario
+                isSafe,
                 scannedAt: new Date(),
+                ingredients: productData.ingredients_text
             };
 
+            // 4. Guardar
             addProduct(newProduct);
             return newProduct;
+
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+            const errorMessage = err instanceof Error ? err.message : 'Error desconocido al escanear';
+            console.error(err);
             setError(errorMessage);
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [calculateMatchedAllergens, addProduct]);
+    }, [userAllergens, calculateMatchedAllergens, addProduct]);
 
     const value: ProductHistoryContextType = {
         products,
@@ -154,9 +196,6 @@ export const ProductHistoryProvider: React.FC<ProductHistoryProviderProps> = ({
     );
 };
 
-/**
- * Hook para acceder al historial de productos
- */
 export const useProductHistory = (): ProductHistoryContextType => {
     const context = useContext(ProductHistoryContext);
     if (!context) {

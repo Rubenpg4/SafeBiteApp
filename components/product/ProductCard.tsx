@@ -13,8 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+
 import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants';
 import { Product } from '@/types';
+import { AllergenIcon } from '../AllergenIcon';
 
 interface ProductCardProps {
     product: Product;
@@ -80,13 +82,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
                             <Text style={styles.allergensLabel}>Alérgenos</Text>
                             <View style={styles.allergenIcons}>
                                 {product.matchedAllergens.map((allergen) => (
-                                    <View key={allergen.id} style={styles.allergenBadge}>
-                                        <Ionicons
-                                            name="alert-circle"
-                                            size={16}
-                                            color="#5CBFB3"
+                                    <View key={allergen.id} style={styles.allergenIconWrapper}>
+                                        <AllergenIcon
+                                            id={allergen.id}
+                                            size={24}
+                                            highlighted={false}
+                                            style={{ backgroundColor: 'transparent' }}
                                         />
-                                        <Text style={styles.allergenName}>{allergen.name}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -187,19 +189,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: Spacing.xs,
     },
-    allergenBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#E8F7F5',
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 4,
-        borderRadius: BorderRadius.full,
-        gap: 4,
-    },
-    allergenName: {
-        fontFamily: FontFamily.inter.regular,
-        fontSize: FontSize.xs,
-        color: '#5CBFB3',
+    allergenIconWrapper: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     // Flecha
     chevron: {

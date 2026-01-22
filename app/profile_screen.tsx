@@ -1,77 +1,74 @@
 import { BottomNavbar } from "@/components/BottomNavbar";
 import { BorderRadius, Colors, Spacing, Typography } from "@/constants";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import React from "react";
+import { useAuth } from "@/contexts/auth";
+import { useUserPreferences } from "@/contexts/userPreferences";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-    Pressable,
-    ScrollView,
-    StyleProp,
-    StyleSheet,
-    Text,
-    View,
-    ViewStyle,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
 } from "react-native";
 
-type AllergenMock = {
-  id: string;
-  label: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-};
+import { AllergenIcon } from "@/components/AllergenIcon";
+import { getAllergensList } from "@/constants/allergens";
 
-// 14 alérgenos de declaración obligatoria (UE)
-const ALLERGENS: AllergenMock[] = [
-  { id: "gluten", label: "Cereales con gluten", icon: "cup" },
-  { id: "crustaceos", label: "Crustáceos", icon: "cup" },
-  { id: "huevos", label: "Huevos", icon: "cup" },
-  { id: "pescado", label: "Pescado", icon: "cup" },
-  { id: "cacahuetes", label: "Cacahuetes", icon: "cup" },
-  { id: "soja", label: "Soja", icon: "cup" },
-  { id: "leche", label: "Leche", icon: "cup" },
-  { id: "frutos_cascara", label: "Frutos de cáscara", icon: "cup" },
-  { id: "apio", label: "Apio", icon: "cup" },
-  { id: "mostaza", label: "Mostaza", icon: "cup" },
-  { id: "sesamo", label: "Sésamo", icon: "cup" },
-  {
-    id: "sulfitos",
-    label: "Dióxido de azufre y sulfitos",
-    icon: "cup",
-  },
-  { id: "altramuces", label: "Altramuces", icon: "cup" },
-  { id: "moluscos", label: "Moluscos", icon: "cup" },
-];
+// Obtenemos la lista ordenada de alérgenos desde nuestra fuente central
+const ALLERGENS_LIST = getAllergensList();
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { logout } = useAuth();
+  const { userAllergens, updateUserAllergens } = useUserPreferences();
   const colors = Colors.light;
 
-  const [expanded, setExpanded] = React.useState(false);
-  const [selectedIds, setSelectedIds] = React.useState<string[]>([
-    "gluten",
-    "leche",
-  ]);
+  const [expanded, setExpanded] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedIds(userAllergens);
+  }, [userAllergens]);
 
   const selectedSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
 
-  const selectedAllergens = React.useMemo(
-    () => ALLERGENS.filter((a) => selectedSet.has(a.id)),
+  const selectedAllergensList = React.useMemo(
+    () => ALLERGENS_LIST.filter((a) => selectedSet.has(a.id)),
     [selectedSet],
   );
 
-  const remainingAllergens = React.useMemo(
-    () => ALLERGENS.filter((a) => !selectedSet.has(a.id)),
+  const remainingAllergensList = React.useMemo(
+    () => ALLERGENS_LIST.filter((a) => !selectedSet.has(a.id)),
     [selectedSet],
   );
 
-  const toggleAllergen = React.useCallback((id: string) => {
+  const toggleAllergen = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
 
-      // Mantener un orden estable según ALLERGENS
-      return ALLERGENS.filter((a) => next.has(a.id)).map((a) => a.id);
+      // Mantenemos el orden original basado en ALLERGENS_LIST
+      return ALLERGENS_LIST.filter((a) => next.has(a.id)).map((a) => a.id);
     });
-  }, []);
+  };
+
+  const saveChanges = async () => {
+    await updateUserAllergens(selectedIds);
+    setExpanded(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Error al cerrar sesión", error);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -114,7 +111,7 @@ export default function ProfileScreen() {
           <View style={[styles.divider, { backgroundColor: "#E6E6E6" }]} />
 
           <View style={styles.selectedRow}>
-            {selectedAllergens.length === 0 ? (
+            {selectedAllergensList.length === 0 ? (
               <Text
                 style={[Typography.bodySmall, { color: colors.textSecondary }]}
               >
@@ -122,10 +119,10 @@ export default function ProfileScreen() {
               </Text>
             ) : (
               <View style={styles.iconRowWrap}>
-                {selectedAllergens.map((a) => (
+                {selectedAllergensList.map((a) => (
                   <AllergenIconButton
                     key={a.id}
-                    icon={a.icon}
+                    id={a.id}
                     label={a.label}
                     selected={true}
                     accentColor={colors.success}
@@ -146,10 +143,10 @@ export default function ProfileScreen() {
               </Text>
 
               <View style={[styles.grid, { marginTop: Spacing.sm }]}>
-                {remainingAllergens.map((a) => (
+                {remainingAllergensList.map((a) => (
                   <AllergenIconButton
                     key={a.id}
-                    icon={a.icon}
+                    id={a.id}
                     label={a.label}
                     selected={false}
                     accentColor={colors.success}
@@ -161,7 +158,7 @@ export default function ProfileScreen() {
               </View>
 
               <Pressable
-                onPress={() => setExpanded(false)}
+                onPress={saveChanges}
                 style={({ pressed }) => [
                   styles.acceptButton,
                   { backgroundColor: colors.success },
@@ -171,12 +168,25 @@ export default function ProfileScreen() {
                 accessibilityLabel="Aceptar"
               >
                 <Text style={[Typography.button, { color: "#FFFFFF" }]}>
-                  Aceptar
+                  Guardar cambios
                 </Text>
               </Pressable>
             </View>
           ) : null}
         </View>
+
+        <Pressable
+          onPress={handleLogout}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <MaterialIcons name="logout" size={20} color="#FF3B30" />
+          <Text style={[Typography.button, { color: "#FF3B30", marginLeft: 8 }]}>
+            Cerrar sesión
+          </Text>
+        </Pressable>
       </ScrollView>
 
       <BottomNavbar buttonColor={colors.success} homeHref="/(tabs)" />
@@ -185,7 +195,7 @@ export default function ProfileScreen() {
 }
 
 function AllergenIconButton({
-  icon,
+  id,
   label,
   selected,
   accentColor,
@@ -193,7 +203,7 @@ function AllergenIconButton({
   containerStyle,
   onPress,
 }: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  id: string; // Recibimos el ID para usar AllergenIcon
   label: string;
   selected: boolean;
   accentColor: string;
@@ -222,10 +232,12 @@ function AllergenIconButton({
           },
         ]}
       >
-        <MaterialCommunityIcons
-          name={icon}
-          size={26}
-          color={selected ? accentColor : "#777"}
+        {/* Usamos el nuevo componente de icono que renderiza el SVG */}
+        <AllergenIcon
+          id={id}
+          size={52}
+          highlighted={false} // Controlamos el color de fondo manualmente en el View padre si queremos, o usamos este prop
+          style={{ backgroundColor: 'transparent' }} // Override del background porque lo maneja el padre
         />
       </View>
 
@@ -329,15 +341,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   allergenCircle: {
-    width: 52,
-    height: 52,
+    width: 60, // Aumentado ligeramente para mejor visualización del SVG
+    height: 60,
     borderRadius: BorderRadius.full,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
+    overflow: 'hidden', // Importante para que no se salga la imagen
   },
   allergenLabel: {
     textAlign: "center",
+    marginTop: 4,
   },
 
   acceptButton: {
@@ -352,5 +366,14 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 3,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: "#FFF0F0",
+    marginTop: Spacing.xl,
   },
 });

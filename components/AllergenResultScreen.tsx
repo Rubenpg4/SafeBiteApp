@@ -4,14 +4,15 @@ import { FontFamily } from "@/constants";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
-    Image,
-    ImageSourcePropType,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import { AllergenIcon } from "./AllergenIcon";
 
 /* TIPOS */
 export type Allergen = {
@@ -169,6 +170,8 @@ function IngredientsList({ items }: { items: string[] }) {
   );
 }
 
+// ...
+
 function AllergenSection({
   title,
   allergens,
@@ -177,7 +180,8 @@ function AllergenSection({
   allergens: {
     id: string;
     label: string;
-    icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+    // icon ya no es necesario aquí, usamos el ID para buscarlo
+    icon?: any;
   }[];
 }) {
   return (
@@ -186,7 +190,7 @@ function AllergenSection({
 
       <View style={styles.allergenGrid}>
         {allergens.map((a) => (
-          <AllergenTile key={a.id} label={a.label} icon={a.icon} />
+          <AllergenTile key={a.id} id={a.id} label={a.label} />
         ))}
       </View>
     </View>
@@ -194,17 +198,15 @@ function AllergenSection({
 }
 
 function AllergenTile({
+  id,
   label,
-  icon,
 }: {
+  id: string; // Recibimos ID
   label: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 }) {
   return (
     <View style={styles.allergenTile}>
-      <View style={styles.allergenIconWrap}>
-        <MaterialCommunityIcons name={icon} size={22} color="#5A2D82" />
-      </View>
+      <AllergenIcon id={id} size={46} highlighted={true} />
       <Text style={styles.allergenLabel} numberOfLines={3}>
         {label}
       </Text>

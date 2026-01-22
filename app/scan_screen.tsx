@@ -1,3 +1,4 @@
+import { useProductHistory } from "@/contexts/productHistory";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   BarcodeScanningResult,
@@ -18,80 +19,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Tipos para OpenFoodFacts
-type OpenFoodFactsProduct = {
-  product_name?: string;
-  brands?: string;
-  image_front_url?: string;
-  image_url?: string;
-  ingredients_text?: string;
-  allergens_tags?: string[];
-  allergens?: string;
-};
-
-type OpenFoodFactsResponse = {
-  status: number;
-  product?: OpenFoodFactsProduct;
-};
-
-// Función para obtener producto de OpenFoodFacts
-async function fetchProductFromOpenFoodFacts(
-  barcode: string,
-): Promise<OpenFoodFactsResponse | null> {
-  try {
-    const response = await fetch(
-      `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`,
-    );
-    const data: OpenFoodFactsResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching from OpenFoodFacts:", error);
-    return null;
-  }
-}
-
-// Mapeo de alérgenos de OpenFoodFacts a iconos
-const allergenIconMap: Record<string, string> = {
-  "en:milk": "cup",
-  "en:gluten": "bread-slice",
-  "en:eggs": "egg",
-  "en:nuts": "nut",
-  "en:peanuts": "peanut",
-  "en:soybeans": "soy-sauce",
-  "en:fish": "fish",
-  "en:crustaceans": "shrimp",
-  "en:celery": "leaf",
-  "en:mustard": "bottle-tonic",
-  "en:sesame-seeds": "seed",
-  "en:sulphur-dioxide-and-sulphites": "chemical-weapon",
-  "en:lupin": "flower",
-  "en:molluscs": "snail",
-};
-
-// Mapeo de alérgenos a nombres en español
-const allergenLabelMap: Record<string, string> = {
-  "en:milk": "Lácteos",
-  "en:gluten": "Gluten",
-  "en:eggs": "Huevos",
-  "en:nuts": "Frutos secos",
-  "en:peanuts": "Cacahuetes",
-  "en:soybeans": "Soja",
-  "en:fish": "Pescado",
-  "en:crustaceans": "Crustáceos",
-  "en:celery": "Apio",
-  "en:mustard": "Mostaza",
-  "en:sesame-seeds": "Sésamo",
-  "en:sulphur-dioxide-and-sulphites": "Sulfitos",
-  "en:lupin": "Altramuces",
-  "en:molluscs": "Moluscos",
-};
-
 export default function ScanScreen() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
   const hasScanned = useRef(false);
   const insets = useSafeAreaInsets();
+
+  // Usar el contexto de historial para la lógica de negocio
+  const { scanAndAddProduct } = useProductHistory();
 
   // Handler cuando se detecta un código de barras
   const handleBarcodeScanned = async ({ data }: BarcodeScanningResult) => {
@@ -100,56 +36,66 @@ export default function ScanScreen() {
     hasScanned.current = true;
     setIsScanning(true);
 
-    console.log(`Código de barras detectado: ${data}`);
+    try {
+      console.log(`Código de barras detectado: ${data}`);
 
-    // Obtener producto de OpenFoodFacts
-    const result = await fetchProductFromOpenFoodFacts(data);
+      // Usar la lógica centralizada del contexto:
+      // 1. Llama a API
+      // 2. Compara alérgenos user vs producto
+      // 3. Guarda en historial
+      const product = await scanAndAddProduct(data);
 
-    if (result && result.status === 1 && result.product) {
-      const product = result.product;
-
-      // Procesar alérgenos
-      const allergenTags = product.allergens_tags || [];
-      const allergens = allergenTags.map((tag) => ({
-        id: tag,
-        label: allergenLabelMap[tag] || tag.replace("en:", ""),
-        icon: allergenIconMap[tag] || "alert-circle",
-      }));
-
-      // Siempre navegar a warning_screen para mostrar los alérgenos detectados
-      // (No tenemos forma de saber si son peligrosos sin usuario logueado)
-      router.push({
-        pathname: "/warning_screen",
-        params: {
-          productName: product.product_name || "Producto desconocido",
-          productBrand: product.brands || "Marca desconocida",
-          productImage: product.image_front_url || product.image_url || "",
-          ingredients:
-            product.ingredients_text || "Sin información de ingredientes",
-          allergens: JSON.stringify(allergens),
-          barcode: data,
-        },
-      });
-    } else {
-      // Producto no encontrado
-      Alert.alert(
-        "Producto no encontrado",
-        "Este producto no está registrado en OpenFoodFacts. ¿Deseas escanear otro?",
-        [
-          {
-            text: "Cancelar",
-            onPress: () => router.back(),
-            style: "cancel",
-          },
-          {
-            text: "Escanear otro",
-            onPress: () => {
-              hasScanned.current = false;
-              setIsScanning(false);
+      if (product) {
+        if (product.isSafe) {
+          // ES SEGURO -> Pantalla verde (Safe)
+          router.push({
+            pathname: "/safe_screen",
+            params: {
+              productName: product.name,
+              productBrand: product.brand,
+              productImage: product.imageUrl || "",
+              ingredients: product.ingredients || "Sin información",
+              // Pasar alérgenos formateados como string
+              allergens: JSON.stringify(product.allergens),
+              barcode: data,
             },
-          },
-        ],
-      );
+          });
+        } else {
+          // PELIGRO -> Pantalla roja (Danger)
+          // Encontramos alérgenos coincidentes
+          router.push({
+            pathname: "/danger_screen",
+            params: {
+              productName: product.name,
+              productBrand: product.brand,
+              productImage: product.imageUrl || "",
+              ingredients: product.ingredients || "Sin información",
+              // Pasar los alérgenos que causaron el peligro
+              matchedAllergens: JSON.stringify(product.matchedAllergens),
+              barcode: data,
+            },
+          });
+        }
+      } else {
+        // Producto no encontrado o error en API
+        Alert.alert(
+          "Producto no encontrado",
+          "No pudimos encontrar información de este producto.",
+          [
+            {
+              text: "OK", onPress: () => {
+                hasScanned.current = false;
+                setIsScanning(false);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Ocurrió un error al procesar el producto.");
+      hasScanned.current = false;
+      setIsScanning(false);
     }
   };
 

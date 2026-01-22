@@ -28,6 +28,7 @@ export interface Product {
     matchedAllergens: Allergen[];  // Alérgenos que coinciden con los del usuario
     isSafe: boolean;               // true si NO tiene alérgenos del usuario
     scannedAt: Date;               // Fecha/hora del escaneo
+    ingredients?: string;          // Lista de ingredientes (opcional)
 }
 
 /**
