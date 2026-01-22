@@ -1,29 +1,55 @@
 import {
-  Allergen,
-  AllergenResultScreen,
-  Product,
+    Allergen,
+    AllergenResultScreen,
+    Product,
 } from "@/components/AllergenResultScreen";
 import { Colors } from "@/constants";
+import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 
 export default function SafeScreen() {
   const colors = Colors["light"];
+  const params = useLocalSearchParams<{
+    productName?: string;
+    productBrand?: string;
+    productImage?: string;
+    ingredients?: string;
+    allergens?: string;
+    barcode?: string;
+  }>();
 
-  // Datos mock para la UI. Sustituirás esto por datos reales cuando conectéis lógica.
+  // Parsear alérgenos del parámetro JSON
+  const parsedAllergens: Allergen[] = params.allergens
+    ? JSON.parse(params.allergens)
+    : [];
+
+  // Construir el producto con los datos recibidos o usar valores por defecto
   const product: Product = {
-    name: "Leche entera",
-    brand: "Mercadona",
-    image: require("@/assets/leche.jpeg"),
-    ingredients: [
-      "LECHE entera de vaca, estabilizantes (E-331, E-339), vitamina D3, corrector de acidez (E-331), ferro quelado con EDTA, aromas, conservador (E-202).",
-    ],
+    name: params.productName || "Producto desconocido",
+    brand: params.productBrand || "Marca desconocida",
+    image: params.productImage
+      ? { uri: params.productImage }
+      : require("@/assets/leche.jpeg"),
+    ingredients: params.ingredients
+      ? [params.ingredients]
+      : ["Sin información de ingredientes"],
   };
 
-  const allergens: Allergen[] = [
-    { id: "lacteos", label: "Lácteos", icon: "cup" },
-    { id: "sulfitos", label: "Sulfitos", icon: "chemical-weapon" },
-    { id: "frutos", label: "Frutos con cáscara", icon: "nut" },
-  ];
+  // Usar los alérgenos parseados o un array vacío
+  const allergens: Allergen[] =
+    parsedAllergens.length > 0
+      ? parsedAllergens
+      : [
+          {
+            id: "none",
+            label: "Sin alérgenos detectados",
+            icon: "check-circle",
+          },
+        ];
+
+  const handleScanAnother = () => {
+    router.replace("/scan_screen");
+  };
 
   return (
     <AllergenResultScreen
@@ -34,6 +60,7 @@ export default function SafeScreen() {
       topIconColor={colors.background}
       product={product}
       allergens={allergens}
+      onPressSecondary={handleScanAnother}
     />
   );
 }
