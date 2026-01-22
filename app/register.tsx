@@ -65,13 +65,13 @@ export default function RegisterScreen() {
         setIsLoading(true);
         try {
             await signUp(email, password, name);
-            // Redirigir al login con credenciales pre-rellenadas y mensaje de verificación
+            // Redirigir a la pantalla de selección de alergias
             router.replace({
-                pathname: '/login',
+                pathname: '/onboarding/allergies',
                 params: {
-                    prefillEmail: email,
-                    prefillPassword: password,
-                    verificationMessage: 'Se ha enviado un correo de verificación.'
+                    fromRegistration: 'true',
+                    email: email,
+                    password: password,
                 }
             });
         } catch (error: any) {

@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/colors';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     Dimensions,
@@ -75,6 +75,7 @@ const AllergyItem = ({ item, isSelected, onPress }: { item: AllergyItemType, isS
 
 export default function AllergySelectionScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ fromRegistration?: string; email?: string; password?: string }>();
     const [selectedAllergies, setSelectedAllergies] = useState(['9', '10', '11', '14']);
 
     const toggleAllergy = (id: string) => {
@@ -87,8 +88,21 @@ export default function AllergySelectionScreen() {
 
     const handleStartPress = () => {
         console.log("Alergias seleccionadas para enviar:", selectedAllergies);
-        // TODO: Guardar las alergias seleccionadas en AsyncStorage o contexto
-        router.replace('/login');
+        // TODO: Guardar las alergias seleccionadas en AsyncStorage o Firebase
+
+        // Si viene del registro, navegar al login con credenciales y mensaje
+        if (params.fromRegistration === 'true') {
+            router.replace({
+                pathname: '/login',
+                params: {
+                    prefillEmail: params.email || '',
+                    prefillPassword: params.password || '',
+                    verificationMessage: 'Se ha enviado un correo de verificación.'
+                }
+            });
+        } else {
+            router.replace('/login');
+        }
     };
 
     return (
