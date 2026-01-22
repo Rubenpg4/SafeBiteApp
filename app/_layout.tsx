@@ -59,6 +59,12 @@ function RootLayoutNav() {
         <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="register" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="safe_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="danger_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="warning_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="profile_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="scan_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="(modals)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
