@@ -2,7 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Typography } from "@/constants";
+import { FontFamily } from "@/constants";
 
 type MaterialIconName = ComponentProps<typeof MaterialIcons>["name"];
 
@@ -87,14 +87,17 @@ const styles = StyleSheet.create({
   topBox: {
     width: "100%",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 30,
     justifyContent: "flex-end",
     position: "relative",
   },
 
   topBoxTitle: {
-    fontFamily: Typography.h1.fontFamily,
-    fontSize: Typography.h1.fontSize,
+    fontFamily: FontFamily.montserrat.bold,
+    fontSize: 48,
+    textAlign: "left",
+    lineHeight: 52,
   },
 
   semiCircleWrap: {

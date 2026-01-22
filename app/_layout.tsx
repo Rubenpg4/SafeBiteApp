@@ -43,7 +43,8 @@ function RootLayoutNav() {
     const inAuth = segments[0] === 'login' || segments[0] === 'register';
 
     // Pantallas sueltas que requieren autenticación
-    const protectedScreens = ['safe_screen', 'danger_screen', 'warning_screen', 'profile_screen', 'scan_screen'];
+    // Pantallas sueltas que requieren autenticación
+    const protectedScreens = ['profile_screen'];
     const isProtectedScreen = protectedScreens.includes(segments[0] as string);
 
     // Si el usuario está en el onboarding inicial (carrusel), no hacer redirección
@@ -76,7 +77,9 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="safe_screen" options={{ headerShown: false }} />
         <Stack.Screen name="danger_screen" options={{ headerShown: false }} />
-        <Stack.Screen name="warning_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="guest_warning_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="search_screen" options={{ headerShown: false }} />
+
         <Stack.Screen name="profile_screen" options={{ headerShown: false }} />
         <Stack.Screen name="scan_screen" options={{ headerShown: false }} />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />

@@ -29,14 +29,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
     };
 
     // Colores según el diseño de Figma
-    const statusColor = product.isSafe ? '#5CBFB3' : '#E88B8B';
+    let statusColor = product.isSafe ? '#5CBFB3' : '#E88B8B';
+    let iconName: any = product.isSafe ? 'checkmark' : 'close';
+
+    // Manejo de estado desconocido / falta de datos
+    if (product.analysisStatus === 'missing_data') {
+        statusColor = '#FFC107'; // Amarillo advertencia
+        iconName = 'help'; // O 'alert', 'warning'
+    }
 
     return (
         <View style={styles.wrapper}>
             {/* Círculo de estado (check/cruz) en ESQUINA SUPERIOR IZQUIERDA */}
             <View style={[styles.statusCircle, { backgroundColor: statusColor }]}>
                 <Ionicons
-                    name={product.isSafe ? 'checkmark' : 'close'}
+                    name={iconName}
                     size={18}
                     color={Colors.light.white}
                 />

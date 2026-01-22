@@ -1,3 +1,4 @@
+import { useAuth } from "@/contexts/auth";
 import { useProductHistory } from "@/contexts/productHistory";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
@@ -25,6 +26,7 @@ export default function ScanScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const hasScanned = useRef(false);
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   // Usar el contexto de historial para la lógica de negocio
   const { scanAndAddProduct } = useProductHistory();
@@ -55,26 +57,65 @@ export default function ScanScreen() {
               productBrand: product.brand,
               productImage: product.imageUrl || "",
               ingredients: product.ingredients || "Sin información",
-              // Pasar alérgenos formateados como string
               allergens: JSON.stringify(product.allergens),
               barcode: data,
             },
           });
         } else {
-          // PELIGRO -> Pantalla roja (Danger)
-          // Encontramos alérgenos coincidentes
-          router.push({
-            pathname: "/danger_screen",
-            params: {
-              productName: product.name,
-              productBrand: product.brand,
-              productImage: product.imageUrl || "",
-              ingredients: product.ingredients || "Sin información",
-              // Pasar los alérgenos que causaron el peligro
-              matchedAllergens: JSON.stringify(product.matchedAllergens),
-              barcode: data,
-            },
-          });
+          // NO SEGURO (detected allergens OR missing data)
+
+          // Check for missing data first
+          if (product.analysisStatus === 'missing_data') {
+            router.push({
+              pathname: "/guest_warning_screen", // Usamos la pantalla amarilla para advertencia
+              params: {
+                productName: product.name,
+                productBrand: product.brand,
+                productImage: product.imageUrl || "",
+                ingredients: product.ingredients || "No hay información de ingredientes disponible.",
+                allergens: JSON.stringify([{
+                  id: 'unknown',
+                  label: 'No pudimos verificar los ingredientes de este producto.',
+                  icon: 'help-circle'
+                }]),
+                barcode: data,
+                title: "Información\ndesconocida" // Param custom title
+              },
+            });
+            return;
+          }
+
+          // PELIGRO -> Pantalla roja (User) o Amarilla (Guest)
+          if (!user) {
+            // Guest -> Yellow Screen
+            router.push({
+              pathname: "/guest_warning_screen",
+              params: {
+                productName: product.name,
+                // ... other params
+                productBrand: product.brand,
+                productImage: product.imageUrl || "",
+                ingredients: product.ingredients || "Sin información",
+                allergens: JSON.stringify(product.matchedAllergens),
+                barcode: data,
+                title: "Alérgenos\ndetectados"
+              },
+            });
+          } else {
+            // User -> Red Screen
+            router.push({
+              pathname: "/danger_screen",
+              params: {
+                // ... other params
+                productName: product.name,
+                productBrand: product.brand,
+                productImage: product.imageUrl || "",
+                ingredients: product.ingredients || "Sin información",
+                allergens: JSON.stringify(product.matchedAllergens),
+                barcode: data,
+              },
+            });
+          }
         }
       } else {
         // Producto no encontrado o error en API

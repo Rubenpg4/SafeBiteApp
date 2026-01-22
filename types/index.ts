@@ -29,6 +29,7 @@ export interface Product {
     isSafe: boolean;               // true si NO tiene alérgenos del usuario
     scannedAt: Date;               // Fecha/hora del escaneo
     ingredients?: string;          // Lista de ingredientes (opcional)
+    analysisStatus?: 'complete' | 'missing_data'; // Nuevo campo para indicar calidad del análisis
 }
 
 /**

@@ -78,7 +78,7 @@ export default function AllergySelectionScreen() {
     const params = useLocalSearchParams<{ fromRegistration?: string; email?: string; password?: string }>();
     const { setAllergiesSetupComplete } = useAuth();
     const { updateUserAllergens } = useUserPreferences();
-    const [selectedAllergies, setSelectedAllergies] = useState(['9', '10', '11', '14']);
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
 
     const toggleAllergy = (id: string) => {
         if (selectedAllergies.includes(id)) {

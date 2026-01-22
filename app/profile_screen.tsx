@@ -127,7 +127,9 @@ export default function ProfileScreen() {
                     selected={true}
                     accentColor={colors.success}
                     labelColor={colors.textSecondary}
-                    onPress={() => toggleAllergen(a.id)}
+                    onPress={() => {
+                      if (expanded) toggleAllergen(a.id);
+                    }}
                   />
                 ))}
               </View>
@@ -235,7 +237,7 @@ function AllergenIconButton({
         {/* Usamos el nuevo componente de icono que renderiza el SVG */}
         <AllergenIcon
           id={id}
-          size={52}
+          size={56} // Max size available inside the border (60 - 4 = 56)
           highlighted={false} // Controlamos el color de fondo manualmente en el View padre si queremos, o usamos este prop
           style={{ backgroundColor: 'transparent' }} // Override del background porque lo maneja el padre
         />

@@ -4,36 +4,53 @@ import {
   Product,
 } from "@/components/AllergenResultScreen";
 import { Colors } from "@/constants";
-import React from "react";
+import { router, useLocalSearchParams } from "expo-router";
 
 export default function DangerScreen() {
   const colors = Colors["light"];
+  const params = useLocalSearchParams<{
+    productName?: string;
+    productBrand?: string;
+    productImage?: string;
+    ingredients?: string;
+    allergens?: string;
+    barcode?: string;
+  }>();
 
-  // Datos mock para la UI. Sustituirás esto por datos reales cuando conectéis lógica.
+  // Parsear alérgenos del parámetro JSON
+  const parsedAllergens: Allergen[] = params.allergens
+    ? JSON.parse(params.allergens)
+    : [];
+
+  // Construir el producto con los datos recibidos o usar valores por defecto
   const product: Product = {
-    name: "Leche entera",
-    brand: "Mercadona",
-    image: require("@/assets/leche.jpeg"),
-    ingredients: [
-      "LECHE entera de vaca, estabilizantes (E-331, E-339), vitamina D3, corrector de acidez (E-331), ferro quelado con EDTA, aromas, conservador (E-202).",
-    ],
+    name: params.productName || "Producto desconocido",
+    brand: params.productBrand || "Marca desconocida",
+    image: params.productImage
+      ? { uri: params.productImage }
+      : null,
+    ingredients: params.ingredients
+      ? [params.ingredients]
+      : ["Sin información de ingredientes"],
   };
 
-  const allergens: Allergen[] = [
-    { id: "lacteos", label: "Lácteos", icon: "cup" },
-    { id: "sulfitos", label: "Sulfitos", icon: "chemical-weapon" },
-    { id: "frutos", label: "Frutos con cáscara", icon: "nut" },
-  ];
+  // Usar los alérgenos peligrosos coinciden
+  const allergens: Allergen[] = parsedAllergens;
+
+  const handleScanAnother = () => {
+    router.replace("/scan_screen");
+  };
 
   return (
     <AllergenResultScreen
-      accentColor={colors.danger}
+      accentColor={colors.error}
       backgroundColor={colors.background}
       topTitle="Alérgenos encontrados"
       topIconName="dangerous"
       topIconColor={colors.background}
       product={product}
       allergens={allergens}
+      onPressSecondary={handleScanAnother}
     />
   );
 }

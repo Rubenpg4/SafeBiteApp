@@ -1,11 +1,10 @@
 import {
-    Allergen,
-    AllergenResultScreen,
-    Product,
+  Allergen,
+  AllergenResultScreen,
+  Product,
 } from "@/components/AllergenResultScreen";
 import { Colors } from "@/constants";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
 
 export default function SafeScreen() {
   const colors = Colors["light"];
@@ -29,7 +28,7 @@ export default function SafeScreen() {
     brand: params.productBrand || "Marca desconocida",
     image: params.productImage
       ? { uri: params.productImage }
-      : require("@/assets/leche.jpeg"),
+      : null,
     ingredients: params.ingredients
       ? [params.ingredients]
       : ["Sin información de ingredientes"],
@@ -40,12 +39,12 @@ export default function SafeScreen() {
     parsedAllergens.length > 0
       ? parsedAllergens
       : [
-          {
-            id: "none",
-            label: "Sin alérgenos detectados",
-            icon: "check-circle",
-          },
-        ];
+        {
+          id: "none",
+          label: "Sin alérgenos detectados",
+          icon: "check-circle",
+        },
+      ];
 
   const handleScanAnother = () => {
     router.replace("/scan_screen");
@@ -55,7 +54,7 @@ export default function SafeScreen() {
     <AllergenResultScreen
       accentColor={colors.success}
       backgroundColor={colors.background}
-      topTitle="Producto seguro"
+      topTitle={`Producto\nseguro`}
       topIconName="check-circle"
       topIconColor={colors.background}
       product={product}

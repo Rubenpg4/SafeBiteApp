@@ -42,7 +42,7 @@ export default function HomeScreen() {
   };
 
   const handleSearch = () => {
-    showToast('Búsqueda próximamente');
+    router.push('/search_screen');
   };
 
   const handleSettings = () => {
@@ -54,8 +54,43 @@ export default function HomeScreen() {
   };
 
   const handleProductPress = (product: Product) => {
-    // TODO: Navegar a pantalla de detalle del producto
-    showToast(`Ver detalles de: ${product.name}`);
+    const params = {
+      productName: product.name,
+      productBrand: product.brand,
+      productImage: product.imageUrl,
+      ingredients: product.ingredients,
+      barcode: product.barcode,
+      allergens: JSON.stringify(product.matchedAllergens || []),
+    };
+
+    if (product.isSafe) {
+      router.push({
+        pathname: '/safe_screen',
+        params,
+      });
+    } else {
+      if (product.analysisStatus === 'missing_data') {
+        router.push({
+          pathname: "/guest_warning_screen",
+          params: {
+            ...params,
+            ingredients: product.ingredients || "No hay información de ingredientes disponible.",
+            allergens: JSON.stringify([{
+              id: 'unknown',
+              label: 'No pudimos verificar los ingredientes de este producto.',
+              icon: 'help-circle'
+            }]),
+            title: "Información\ndesconocida"
+          },
+        });
+        return;
+      }
+
+      router.push({
+        pathname: '/danger_screen',
+        params,
+      });
+    }
   };
 
   // Componente para estado vacío
@@ -260,24 +295,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     zIndex: 100,
   },
-  // Botón de desarrollo para pruebas
-  devButton: {
-    position: 'absolute',
-    left: Spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: '#FF6B6B',
-    opacity: 0.9,
-  },
-  devButtonText: {
-    fontFamily: FontFamily.inter.semibold,
-    fontSize: 10,
-    color: Colors.light.white,
-  },
+
   // Estilos del Hidden State
   hiddenStateContainer: {
     flex: 1,
