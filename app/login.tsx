@@ -155,8 +155,8 @@ export default function LoginScreen() {
                 />
 
                 <View style={styles.buttonRow}>
-                    <AuthButton title="Entrar" onPress={handleLogin} testID="login-button" />
                     <AuthButton title="Registrar" onPress={handleRegister} testID="register-button" />
+                    <AuthButton title="Entrar" onPress={handleLogin} testID="login-button" />
                 </View>
 
                 <View style={styles.separator} />

@@ -48,7 +48,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 bounces={false}
-                scrollEnabled={false}
+                scrollEnabled={true}
             >
                 {children}
             </ScrollView>
