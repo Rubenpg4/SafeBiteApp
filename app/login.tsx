@@ -9,7 +9,7 @@ import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants
 import { useAuth } from '@/contexts/auth';
 
 export default function LoginScreen() {
-    const { signIn } = useAuth();
+    const { signIn, signInAsGuest, user, logout } = useAuth();
     const params = useLocalSearchParams<{
         prefillEmail?: string;
         prefillPassword?: string;
@@ -34,6 +34,13 @@ export default function LoginScreen() {
             setInfoMessage(params.verificationMessage);
         }
     }, [params.prefillEmail, params.prefillPassword, params.verificationMessage]);
+
+    // Limpiar sesión anónima al entrar al login (ej: al volver del escáner)
+    useEffect(() => {
+        if (user?.isAnonymous) {
+            logout();
+        }
+    }, [user]);
 
     const showToast = (message: string) => {
         if (Platform.OS === 'android') {
@@ -87,8 +94,13 @@ export default function LoginScreen() {
         showToast('Próximamente');
     };
 
-    const handleScanBarcode = () => {
-        router.push('/scan_screen');
+    const handleScanBarcode = async () => {
+        try {
+            await signInAsGuest();
+            router.push('/scan_screen');
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo iniciar como invitado');
+        }
     };
 
     return (

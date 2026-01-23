@@ -188,6 +188,7 @@ export default function ScanScreen() {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing={facing}
+        active={true}
         onBarcodeScanned={isScanning ? undefined : handleBarcodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: [

@@ -55,9 +55,9 @@ function RootLayoutNav() {
       if (!hasCompletedAllergiesSetup && !inAllergies) {
         // Primera vez: ir a selección de alergias
         router.replace('/onboarding/allergies');
-      } else if (hasCompletedAllergiesSetup && (inAuth || inOnboarding)) {
+      } else if (hasCompletedAllergiesSetup && (inAuth || inOnboarding) && !user.isAnonymous) {
         // Si ya tiene todo listo y está intentar entrar a auth/onboarding -> mandar al home
-        // PERO permitir estar en otras pantallas como scan_screen, profile, etc.
+        // SOLO para usuarios registrados. Los invitados se manejan manualmente.
         router.replace('/(tabs)');
       }
     } else if (!user && (inTabsGroup || inAllergies || isProtectedScreen)) {

@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Colección global de productos (catálogo/caché)
+    match /products/{barcode} {
+      // Cualquier persona puede leer el catálogo (incluidos invitados) para optimizar
+      allow read: if true;
+
+      // Permitir escritura pública (invitados contribuyen al catálogo)
+      allow create: if true;
+      allow update: if true;
+    }
+
+    // Colección de usuarios
+    match /users/{userId} {
+      // Solo el propietario puede leer y escribir su documento
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Subcolección de historial de escaneos
+      match /scanHistory/{scanId} {
+        // Solo el propietario puede leer y escribir su historial
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}

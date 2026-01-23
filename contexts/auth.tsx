@@ -1,11 +1,13 @@
 
 import { auth } from '@/config/firebase';
+import { createUserDocument } from '@/services/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
     onAuthStateChanged,
     sendEmailVerification,
+    signInAnonymously,
     signInWithEmailAndPassword,
     updateProfile,
     User
@@ -20,6 +22,7 @@ interface AuthContextType {
     hasCompletedAllergiesSetup: boolean;
     signIn: (email: string, pass: string) => Promise<void>;
     signUp: (email: string, pass: string, name: string) => Promise<void>;
+    signInAsGuest: () => Promise<void>;
     logout: () => Promise<void>;
     setAllergiesSetupComplete: () => Promise<void>;
     checkAllergiesSetup: (userId?: string) => Promise<boolean>;
@@ -76,10 +79,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            if (firebaseUser && firebaseUser.emailVerified) {
-                setUser(firebaseUser);
-                // Verificar si ya completó la configuración de alergias
-                await checkAllergiesSetup(firebaseUser.uid);
+            if (firebaseUser) {
+                // Usuario autenticado (email verificado O anónimo)
+                if (firebaseUser.emailVerified || firebaseUser.isAnonymous) {
+                    setUser(firebaseUser);
+                    // Verificar si ya completó la configuración de alergias (solo para no anónimos)
+                    if (!firebaseUser.isAnonymous) {
+                        await checkAllergiesSetup(firebaseUser.uid);
+                    } else {
+                        // Para invitados, siempre "completo" para que no pida login, pero manejado por lógica de UI
+                        setHasCompletedAllergiesSetup(true);
+                    }
+                } else {
+                    setUser(null);
+                }
             } else {
                 setUser(null);
             }
@@ -114,6 +127,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
             if (userCredential.user) {
                 await updateProfile(userCredential.user, { displayName: name });
+
+                // Crear documento de usuario en Firestore
+                try {
+                    console.log('[SafeBite] Creating Firestore document for user:', userCredential.user.uid);
+                    await createUserDocument(userCredential.user.uid, []);
+                    console.log('[SafeBite] Firestore document created successfully');
+                } catch (firestoreError) {
+                    console.error('[SafeBite] Error creating Firestore document:', firestoreError);
+                    // No lanzar error - permitir que el registro continúe
+                }
+
                 await sendEmailVerification(userCredential.user);
                 // Cerrar sesión inmediatamente después del registro
                 await firebaseSignOut(auth);
@@ -121,6 +145,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             // Desactivar flag después de completar todo
             isRegisteringRef.current = false;
+        }
+    };
+
+    const signInAsGuest = async () => {
+        try {
+            console.log('[SafeBite] Signing in anonymously...');
+            await signInAnonymously(auth);
+            console.log('[SafeBite] Signed in anonymously');
+        } catch (error) {
+            console.error('Error signing in anonymously:', error);
+            throw error;
         }
     };
 
@@ -138,6 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         hasCompletedAllergiesSetup,
         signIn,
         signUp,
+        signInAsGuest,
         logout,
         setAllergiesSetupComplete,
         checkAllergiesSetup

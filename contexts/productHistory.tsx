@@ -3,6 +3,8 @@
  */
 
 import { ALLERGENS_DATA } from '@/constants/allergens';
+import { createProduct, getOrCreateProduct, getProductFromCache, ProductCreateData } from '@/services/productService';
+import { addScanToHistory, getScanHistory } from '@/services/userService';
 import { Allergen, Product, ProductHistoryState } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
@@ -12,64 +14,8 @@ import { useUserPreferences } from './userPreferences';
 const PRODUCT_HISTORY_KEY = 'scanned_products_history';
 
 // Mapeo de API tags a nuestros IDs (Solo necesitamos el ID, el resto está en constants/allergens.ts)
-// Mapeo ampliado de tags de la API
-const ALLERGEN_MAP: Record<string, string> = {
-    // Gluten
-    'en:gluten': '1', 'es:gluten': '1', 'fr:gluten': '1',
-    // Crustaceans
-    'en:crustaceans': '2', 'es:crustáceos': '2', 'es:crustaceos': '2',
-    // Eggs
-    'en:eggs': '3', 'es:huevos': '3', 'en:egg': '3', 'es:huevo': '3',
-    // Fish
-    'en:fish': '4', 'es:pescado': '4',
-    // Nuts
-    'en:nuts': '5', 'es:frutos de cáscara': '5', 'es:frutos-de-cascara': '5', 'es:frutos secos': '5',
-    // Celery
-    'en:celery': '6', 'es:apio': '6',
-    // Mustard
-    'en:mustard': '7', 'es:mostaza': '7',
-    // Sesame
-    'en:sesame-seeds': '8', 'es:granos de sésamo': '8', 'es:sesamo': '8', 'en:sesame': '8',
-    // Peanuts
-    'en:peanuts': '9', 'es:cacahuetes': '9', 'es:cacahuete': '9', 'en:peanut': '9',
-    // Soybeans
-    'en:soybeans': '10', 'es:soja': '10', 'en:soy': '10', 'en:soya': '10',
-    // Milk
-    'en:milk': '11', 'es:leche': '11', 'fr:lait': '11', 'pt:leite': '11',
-    // Sulphur dioxide
-    'en:sulphur-dioxide-and-sulphites': '12', 'es:dióxido de azufre y sulfitos': '12', 'es:sulfitos': '12',
-    // Molluscs
-    'en:molluscs': '13', 'es:moluscos': '13',
-    // Lupin
-    'en:lupin': '14', 'es:altramuces': '14',
-};
-
-// Palabras clave para búsqueda en ingredientes (fallback)
-const ALLERGEN_KEYWORDS: Record<string, string[]> = {
-    '1': ['gluten', 'trigo', 'wheat', 'cebada', 'barley', 'centeno', 'rye', 'avena', 'oat'],
-    '2': ['crustaceo', 'crustáceo', 'gamba', 'langostino', 'cangrejo', 'bogavante', 'camaron', 'camarón'],
-    '3': ['huevo', 'egg', 'yema', 'clara', 'ovo'],
-    '4': ['pescado', 'fish', 'bacalao', 'atun', 'atún', 'salmon', 'salmón', 'merluza'],
-    '5': ['nuez', 'nueces', 'nut', 'almendra', 'almond', 'avellana', 'hazelnut', 'pistacho', 'anacardo'],
-    '6': ['apio', 'celery'],
-    '7': ['mostaza', 'mustard'],
-    '8': ['sesamo', 'sésamo', 'sesame', 'ajonjoli', 'ajonjolí'],
-    '9': ['cacahuete', 'peanut', 'maní', 'mani'],
-    '10': ['soja', 'soy', 'soya', 'edamame'],
-    '11': ['leche', 'milk', 'lait', 'nata', 'cream', 'queso', 'cheese', 'yogur', 'yogurt', 'mantequilla', 'butter', 'suero', 'whey', 'lactosa', 'lactose', 'casein', 'caseina', 'fermentos lacticos', 'fermentos lácticos', 'mozzarella'],
-    '12': ['sulfito', 'sulphite', 'bisulfito', 'metabisulfito', 'e220', 'e221', 'e222', 'e223', 'e224', 'e226', 'e227', 'e228'],
-    '13': ['molusco', 'mollusc', 'mejillon', 'mejillón', 'almeja', 'sepia', 'calamar', 'pulpo'],
-    '14': ['altramuc', 'altramuz', 'lupin'],
-};
-
-// Pre-compilar regexes para rendimiento óptimo
-const ALLERGEN_REGEXES: Record<string, RegExp> = Object.entries(ALLERGEN_KEYWORDS).reduce((acc, [id, keywords]) => {
-    const pattern = keywords
-        .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|');
-    acc[id] = new RegExp(`\\b(${pattern})\\b`, 'i');
-    return acc;
-}, {} as Record<string, RegExp>);
+// Mapeos y lógica de detección movidos a utils/allergenDetection.ts
+import { detectAllergens } from '@/utils/allergenDetection';
 
 interface ProductHistoryContextType extends ProductHistoryState {
     addProduct: (product: Product) => void;
@@ -88,24 +34,90 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Cargar historial al iniciar
+    // Serializar userAllergens para comparación estable (evita re-renders infinitos)
+    const userAllergensKey = JSON.stringify(userAllergens);
+
+    // Cargar historial al iniciar, cuando cambia el usuario, o cuando cambian los alérgenos
     useEffect(() => {
         loadHistory();
-    }, []);
+    }, [user?.uid, userAllergensKey]);
 
     const loadHistory = async () => {
         try {
-            const savedHistory = await AsyncStorage.getItem(PRODUCT_HISTORY_KEY);
-            if (savedHistory) {
-                // Parseamos los datos y convertimos las fechas de string a Date
-                const parsedProducts = JSON.parse(savedHistory).map((p: any) => ({
-                    ...p,
-                    scannedAt: new Date(p.scannedAt), // Restaurar objeto Date
-                }));
-                setProducts(parsedProducts);
+            if (user?.uid && !user.isAnonymous) {
+                // Usuario autenticado REAL: cargar desde Firestore (ya viene ordenado por fecha desc)
+                console.log('[SafeBite] Loading scan history from Firestore...');
+                const firestoreHistory = await getScanHistory(user.uid, 50);
+
+                // Convertir a formato Product para la UI con RECÁLCULO DINÁMICO de isSafe
+                const productsFromFirestore: Product[] = firestoreHistory.map(item => {
+                    // Recalcular isSafe basado en los alérgenos ACTUALES del usuario
+                    const itemAllergenIds = item.allergenIds || [];
+                    const hasMatchingAllergen = itemAllergenIds.some(
+                        (allergenId: string) => userAllergens.includes(allergenId)
+                    );
+                    const dynamicIsSafe = !hasMatchingAllergen;
+
+                    // Construir matched allergens para la UI
+                    const matchedAllergens: Allergen[] = itemAllergenIds
+                        .filter((id: string) => userAllergens.includes(id))
+                        .map((id: string) => {
+                            const def = ALLERGENS_DATA[id];
+                            return def ? { id: def.id, name: def.label, icon: 'alert' } : null;
+                        })
+                        .filter(Boolean) as Allergen[];
+
+                    // Todos los alérgenos del producto
+                    const allAllergens: Allergen[] = itemAllergenIds
+                        .map((id: string) => {
+                            const def = ALLERGENS_DATA[id];
+                            return def ? { id: def.id, name: def.label, icon: 'alert' } : null;
+                        })
+                        .filter(Boolean) as Allergen[];
+
+                    return {
+                        id: item.id,
+                        barcode: item.barcode,
+                        name: item.productName,
+                        brand: item.brand,
+                        imageUrl: item.imageUrl,
+                        ingredients: item.ingredients,
+                        allergens: allAllergens,
+                        matchedAllergens: matchedAllergens,
+                        isSafe: dynamicIsSafe,
+                        scannedAt: item.scannedAt,
+                        analysisStatus: item.ingredients ? 'complete' : 'missing_data'
+                    } as Product;
+                });
+
+                setProducts(productsFromFirestore);
+                console.log(`[SafeBite] Loaded ${productsFromFirestore.length} items from Firestore (isSafe recalculated)`);
+            } else {
+                // Usuario invitado: cargar desde AsyncStorage
+                const savedHistory = await AsyncStorage.getItem(PRODUCT_HISTORY_KEY);
+                if (savedHistory) {
+                    const parsedProducts = JSON.parse(savedHistory).map((p: any) => ({
+                        ...p,
+                        scannedAt: new Date(p.scannedAt),
+                    }));
+                    setProducts(parsedProducts);
+                }
             }
         } catch (error) {
             console.error('Error loading history:', error);
+            // Fallback a AsyncStorage si falla Firestore
+            try {
+                const savedHistory = await AsyncStorage.getItem(PRODUCT_HISTORY_KEY);
+                if (savedHistory) {
+                    const parsedProducts = JSON.parse(savedHistory).map((p: any) => ({
+                        ...p,
+                        scannedAt: new Date(p.scannedAt),
+                    }));
+                    setProducts(parsedProducts);
+                }
+            } catch (fallbackError) {
+                console.error('Error loading from fallback:', fallbackError);
+            }
         }
     };
 
@@ -166,34 +178,12 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
  * Helper to parse OpenFoodFacts product data into our Product type
  */
     const parseProductData = useCallback((productData: any, barcode: string): Product => {
-        const detectedAllergenIds = new Set<string>();
+        // 2. Análisis Avanzado con SafeBite Engine (Unificado)
+        const analysisTags = productData.allergens_tags || [];
+        const analysisIngredients = productData.ingredients_text || '';
 
-        // 2a. Extraer de etiquetas (Tags)
-        const rawTags = productData.allergens_tags || [];
-        rawTags.forEach((tag: string) => {
-            const lowerTag = tag.toLowerCase();
-            if (ALLERGEN_MAP[lowerTag]) {
-                detectedAllergenIds.add(ALLERGEN_MAP[lowerTag]);
-            }
-        });
+        const detectedAllergenIds = detectAllergens(analysisTags, analysisIngredients);
 
-        // 2b. Búsqueda por palabras clave en ingredientes Y nombre del producto
-        const searchableText = [
-            productData.product_name,
-            productData.brands,
-            productData.ingredients_text
-        ].filter(Boolean).join(' ').toLowerCase();
-
-        if (searchableText) {
-            // Usar regexes pre-compiladas. Mucho más rápido.
-            Object.entries(ALLERGEN_REGEXES).forEach(([id, regex]) => {
-                if (detectedAllergenIds.has(id)) return;
-
-                if (regex.test(searchableText)) {
-                    detectedAllergenIds.add(id);
-                }
-            });
-        }
 
         // Construir lista completa de alérgenos del producto
         const productAllergens: Allergen[] = [];
@@ -209,9 +199,11 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
         // 3. Comparar con preferencias del usuario
         let matchedAllergens: Allergen[] = calculateMatchedAllergens(productAllergenIds);
 
+
+
         // 4. Determinar estado de datos (calidad)
         const hasIngredients = !!productData.ingredients_text;
-        const hasTags = rawTags.length > 0;
+        const hasTags = analysisTags.length > 0;
 
         let analysisStatus: 'complete' | 'missing_data' = 'complete';
 
@@ -277,44 +269,169 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
     }, [parseProductData]);
 
     /**
-     * LLAMADA REAL A LA API Y LÓGICA DE NEGOCIO
+     * FLUJO DE ESCANEO OPTIMIZADO CON CATÁLOGO GLOBAL
+     * 1. Check caché en /products
+     * 2. Si no existe → Llamar API y crear en catálogo
+     * 3. Si existe → Incrementar scanCount
+     * 4. Calcular isSafe vs alérgenos del usuario
+     * 5. Desnormalizar y guardar en historial del usuario
      */
     const scanAndAddProduct = useCallback(async (barcode: string): Promise<Product | null> => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Fetch OpenFoodFacts
-            const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
-            const data = await response.json();
+            console.log('[SafeBite] Starting optimized scan flow for:', barcode);
 
-            if (data.status !== 1 || !data.product) {
+            // Función para fetch de API
+            const fetchFromApi = async (): Promise<ProductCreateData | null> => {
+                console.log('[SafeBite] Fetching from OpenFoodFacts API...');
+                const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+                const data = await response.json();
+
+                if (data.status !== 1 || !data.product) {
+                    return null;
+                }
+
+                const productData = data.product;
+
+                // Análisis Avanzado con SafeBite Engine
+                const analysisTags = productData.allergens_tags || [];
+                const analysisIngredients = productData.ingredients_text || '';
+
+                const detectedAllergenIds = detectAllergens(analysisTags, analysisIngredients);
+
+                return {
+                    productName: productData.product_name || 'Producto desconocido',
+                    brand: productData.brands || 'Marca desconocida',
+                    imageUrl: productData.image_front_url || productData.image_url,
+                    ingredients: productData.ingredients_text,
+                    allergenIds: Array.from(detectedAllergenIds)
+                };
+            };
+
+            let productData: ProductCreateData | null = null;
+            let catalogProduct: { barcode: string; productName: string; brand: string; imageUrl?: string; ingredients?: string; allergenIds: string[] } | null = null;
+
+            // Flujo diferente para usuarios autenticados vs invitados
+            if (user) {
+                // Usuario autenticado: usar catálogo global con Firestore
+                console.log('[SafeBite] Authenticated user - using Firestore catalog');
+                const firestoreProduct = await getOrCreateProduct(barcode, fetchFromApi);
+                if (firestoreProduct) {
+                    catalogProduct = {
+                        barcode: firestoreProduct.barcode,
+                        productName: firestoreProduct.productName,
+                        brand: firestoreProduct.brand,
+                        imageUrl: firestoreProduct.imageUrl,
+                        ingredients: firestoreProduct.ingredients,
+                        allergenIds: firestoreProduct.allergenIds
+                    };
+                }
+            } else {
+                // Usuario invitado: Usar caché global (lectura) -> Fallback a API
+                console.log('[SafeBite] Guest user - checking cache first');
+
+                // 1. Intentar leer de caché global
+                const cachedProduct = await getProductFromCache(barcode);
+
+                if (cachedProduct) {
+                    console.log('[SafeBite] Guest user - found in cache!');
+                    catalogProduct = {
+                        barcode: cachedProduct.barcode,
+                        productName: cachedProduct.productName,
+                        brand: cachedProduct.brand,
+                        imageUrl: cachedProduct.imageUrl,
+                        ingredients: cachedProduct.ingredients,
+                        allergenIds: cachedProduct.allergenIds
+                    };
+                } else {
+                    // 2. No está en caché -> Fallback a API (sin guardar en Firestore porque son invitados)
+                    console.log('[SafeBite] Guest user - not in cache, fetching from API');
+                    productData = await fetchFromApi();
+                    if (productData) {
+                        try {
+                            // CONTRIBUCIÓN A LA CACHÉ: Guardar para futuros usuarios
+                            // Aunque sea invitado, puede crear productos en el catálogo global
+                            console.log('[SafeBite] Guest user - contributing to cache...');
+                            await createProduct(barcode, productData);
+                        } catch (cacheError) {
+                            console.warn('[SafeBite] Failed to save to cache (guest)', cacheError);
+                            // No bloqueamos el flujo si falla la caché
+                        }
+
+                        catalogProduct = {
+                            barcode: barcode,
+                            productName: productData.productName,
+                            brand: productData.brand,
+                            imageUrl: productData.imageUrl,
+                            ingredients: productData.ingredients,
+                            allergenIds: productData.allergenIds
+                        };
+                    }
+                }
+            }
+
+            if (!catalogProduct) {
                 throw new Error('Producto no encontrado');
             }
 
-            // 2. Parsear datos usando la función centralizada
-            const product = parseProductData(data.product, barcode);
+            // 4. Calcular matchedAllergens e isSafe para ESTE usuario
+            const matchedAllergens = calculateMatchedAllergens(catalogProduct.allergenIds);
+            const isSafe = matchedAllergens.length === 0;
 
-            // 3. Ajuste para usuarios NO logueados (Guest)
-            // Si el usuario NO está logueado, consideramos TODOS los detectados como peligrosos para mostrar alerta
-            if (!user) {
-                product.matchedAllergens = product.allergens;
-                product.isSafe = product.matchedAllergens.length === 0;
+            // Construir objeto Product para la UI
+            const productAllergens: Allergen[] = catalogProduct.allergenIds.map((id: string) => {
+                const def = ALLERGENS_DATA[id];
+                return def ? { id: def.id, name: def.label, icon: 'alert' } : null;
+            }).filter(Boolean) as Allergen[];
+
+            const product: Product = {
+                id: barcode,
+                barcode: catalogProduct.barcode,
+                name: catalogProduct.productName,
+                brand: catalogProduct.brand,
+                imageUrl: catalogProduct.imageUrl,
+                allergens: productAllergens,
+                matchedAllergens: user ? matchedAllergens : productAllergens, // Guest: todos son matched
+                isSafe: user ? isSafe : false, // Guest: siempre peligroso si hay alérgenos
+                scannedAt: new Date(),
+                ingredients: catalogProduct.ingredients,
+                analysisStatus: catalogProduct.ingredients ? 'complete' : 'missing_data'
+            };
+
+            // 5a. Guardar localmente (estado + AsyncStorage)
+            addProduct(product);
+
+            // 5b. Desnormalizar y guardar en Firestore (solo usuarios autenticados REALES, no invitados)
+            if (user?.uid && !user.isAnonymous) {
+                try {
+                    await addScanToHistory(user.uid, {
+                        barcode: product.barcode,
+                        productName: product.name,
+                        brand: product.brand,
+                        imageUrl: product.imageUrl,
+                        ingredients: catalogProduct.ingredients,  // Ingredientes completos
+                        allergenIds: catalogProduct.allergenIds,  // Para recálculo dinámico
+                        isSafe: product.isSafe
+                    });
+                    console.log('[SafeBite] Scan saved to user history');
+                } catch (firestoreError) {
+                    console.error('[SafeBite] Error saving to user history:', firestoreError);
+                }
             }
 
-            // 4. Guardar
-            addProduct(product);
             return product;
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error desconocido al escanear';
-            console.error(err);
+            console.error('[SafeBite] Scan error:', err);
             setError(errorMessage);
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [user, parseProductData, addProduct]);
+    }, [user, userAllergens, calculateMatchedAllergens, addProduct]);
 
     const value: ProductHistoryContextType = {
         products,

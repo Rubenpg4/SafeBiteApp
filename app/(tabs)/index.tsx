@@ -31,7 +31,7 @@ export default function HomeScreen() {
   const colors = Colors['light'];
 
   // Obtener el primer nombre del usuario
-  const firstName = user?.displayName?.split(' ')[0] || 'Usuario';
+  const firstName = user?.isAnonymous ? 'Invitado' : (user?.displayName?.split(' ')[0] || 'Usuario');
 
   const showToast = (message: string) => {
     if (Platform.OS === 'android') {
@@ -137,13 +137,15 @@ export default function HomeScreen() {
             <Ionicons name="search" size={20} color={colors.white} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={handleSettings}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="settings-outline" size={20} color={colors.white} />
-          </TouchableOpacity>
+          {!user?.isAnonymous && (
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={handleSettings}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="settings-outline" size={20} color={colors.white} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -163,7 +165,18 @@ export default function HomeScreen() {
       </View>
 
       {/* Contenido: Lista de productos o estado vacío */}
-      {hasProducts ? (
+      {user?.isAnonymous ? (
+        <View style={styles.emptyStateContainer}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: Colors.light.paginationInactive }]}>
+            <Ionicons name="person-outline" size={60} color={Colors.light.textSecondary} />
+          </View>
+          <Text style={styles.emptyTitle}>Modo Invitado</Text>
+          <Text style={styles.emptyDescription}>
+            El historial no se guarda en modo invitado.{'\n'}
+            Regístrate para guardar tus escaneos.
+          </Text>
+        </View>
+      ) : hasProducts ? (
         <HistoryList
           products={filteredProducts}
           onProductPress={handleProductPress}
