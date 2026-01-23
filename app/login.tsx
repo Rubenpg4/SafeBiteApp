@@ -9,7 +9,7 @@ import { BorderRadius, Colors, FontFamily, FontSize, Spacing } from '@/constants
 import { useAuth } from '@/contexts/auth';
 
 export default function LoginScreen() {
-    const { signIn, signInAsGuest, user, logout } = useAuth();
+    const { signIn, signInAsGuest, signInWithGoogle, user, logout } = useAuth();
     const params = useLocalSearchParams<{
         prefillEmail?: string;
         prefillPassword?: string;
@@ -86,8 +86,14 @@ export default function LoginScreen() {
         router.push('/register');
     };
 
-    const handleGoogleLogin = () => {
-        showToast('Próximamente');
+    const handleGoogleLogin = async () => {
+        try {
+            await signInWithGoogle();
+            // El AuthContext redirigirá automáticamente según el estado de alergias
+        } catch (error: any) {
+            console.error('[Login] Google sign-in failed:', error);
+            showToast('Error al iniciar sesión con Google');
+        }
     };
 
     const handleAppleLogin = () => {

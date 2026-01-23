@@ -1,13 +1,16 @@
 
 import { auth } from '@/config/firebase';
 import { createUserDocument } from '@/services/userService';
+import { promptGoogleSignIn } from '@/utils/googleAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
+    GoogleAuthProvider,
     onAuthStateChanged,
     sendEmailVerification,
     signInAnonymously,
+    signInWithCredential,
     signInWithEmailAndPassword,
     updateProfile,
     User
@@ -23,6 +26,7 @@ interface AuthContextType {
     signIn: (email: string, pass: string) => Promise<void>;
     signUp: (email: string, pass: string, name: string) => Promise<void>;
     signInAsGuest: () => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     logout: () => Promise<void>;
     setAllergiesSetupComplete: () => Promise<void>;
     checkAllergiesSetup: (userId?: string) => Promise<boolean>;
@@ -159,6 +163,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const signInWithGoogle = async () => {
+        try {
+            console.log('[SafeBite] Starting Google Sign-In...');
+
+            // 1. Obtener ID Token de Google via OAuth
+            const idToken = await promptGoogleSignIn();
+
+            // 2. Crear credencial de Firebase con el ID Token
+            const credential = GoogleAuthProvider.credential(idToken);
+
+            // 3. Sign in con Firebase usando la credencial
+            const userCredential = await signInWithCredential(auth, credential);
+
+            console.log('[SafeBite] Google sign-in successful:', userCredential.user.email);
+
+            // 4. Crear documento de usuario si es primera vez
+            if (userCredential.user) {
+                try {
+                    await createUserDocument(userCredential.user.uid, []);
+                    console.log('[SafeBite] User document created/verified');
+                } catch (firestoreError) {
+                    console.error('[SafeBite] Error with Firestore document:', firestoreError);
+                    // No bloqueamos el login si falla Firestore
+                }
+            }
+
+            // 5. Verificar si completó alergias
+            await checkAllergiesSetup(userCredential.user.uid);
+
+        } catch (error) {
+            console.error('[SafeBite] Google sign-in error:', error);
+            throw error;
+        }
+    };
+
     const logout = async () => {
         try {
             await firebaseSignOut(auth);
@@ -174,6 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signUp,
         signInAsGuest,
+        signInWithGoogle,
         logout,
         setAllergiesSetupComplete,
         checkAllergiesSetup

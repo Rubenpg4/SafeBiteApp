@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.perfectti.appSafeBiteApp"
+      "bundleIdentifier": "com.perfectti.appSafeBiteApp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -50,13 +53,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "85a958e4-8650-4b42-bd55-7ff8ccdacfe3"
+        "projectId": "253b75ba-a9e7-4daa-8699-a3d8cbb6666e"
       }
     },
-    "owner": "perfectti",
-    "updates": {
-      "url": "https://u.expo.dev/85a958e4-8650-4b42-bd55-7ff8ccdacfe3"
-    },
+    "owner": "rubenpg4",
     "runtimeVersion": {
       "policy": "appVersion"
     }

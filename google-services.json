@@ -1,0 +1,39 @@
+{
+    "project_info": {
+        "project_number": "856801488212",
+        "project_id": "safebite-f4915",
+        "storage_bucket": "safebite-f4915.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:856801488212:android:6071668da59fcec1ccecc1",
+                "android_client_info": {
+                    "package_name": "com.perfectti.appSafeBiteApp"
+                }
+            },
+            "oauth_client": [
+                {
+                    "client_id": "856801488212-81scqu2fcjjjktn2v9da9uhg8qvss51e.apps.googleusercontent.com",
+                    "client_type": 3
+                }
+            ],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyBsd9Xs_6gZX7XJpZVdIglBiwUeoIsOtFU"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": [
+                        {
+                            "client_id": "856801488212-6en8aojvjne4aqat9m207ctbbq8fpl3q.apps.googleusercontent.com",
+                            "client_type": 3
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
