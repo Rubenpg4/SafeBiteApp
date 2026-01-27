@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 
 import { AuthButton, AuthHeader, AuthInput, AuthLayout, SocialButtons } from '@/components/auth';
@@ -21,6 +21,7 @@ export default function LoginScreen() {
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [infoMessage, setInfoMessage] = useState('');
+    const [isNavigating, setIsNavigating] = useState(false);
 
     // Leer parámetros si vienen del registro
     useEffect(() => {
@@ -41,6 +42,12 @@ export default function LoginScreen() {
             logout();
         }
     }, [user]);
+
+    useFocusEffect(
+        useCallback(() => {
+            setIsNavigating(false);
+        }, [])
+    );
 
     const showToast = (message: string) => {
         if (Platform.OS === 'android') {
@@ -95,10 +102,14 @@ export default function LoginScreen() {
     };
 
     const handleScanBarcode = async () => {
+        if (isNavigating) return;
+        setIsNavigating(true);
         try {
             await signInAsGuest();
             router.push('/scan_screen');
+            // No reseteamos isNavigating aquí porque la pantalla cambia
         } catch (error) {
+            setIsNavigating(false);
             Alert.alert('Error', 'No se pudo iniciar como invitado');
         }
     };
@@ -160,6 +171,7 @@ export default function LoginScreen() {
                 <TouchableOpacity
                     style={styles.scanButton}
                     onPress={handleScanBarcode}
+                    disabled={isNavigating}
                     activeOpacity={0.8}
                     testID="scan-button"
                 >

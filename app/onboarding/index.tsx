@@ -125,13 +125,13 @@ export default function OnboardingScreen() {
                 )}
                 {/* Gradiente superior para difuminar */}
                 <LinearGradient
-                    colors={[Colors.light.background, 'rgba(244,249,248,0.6)', 'transparent']}
+                    colors={[Colors.light.background, 'rgba(244,249,248,0.6)', 'rgba(244,249,248,0)']}
                     locations={[0, 0.4, 1]}
                     style={styles.fadeGradientTop}
                 />
                 {/* Gradiente inferior para difuminar */}
                 <LinearGradient
-                    colors={['transparent', 'rgba(244,249,248,0.6)', Colors.light.background]}
+                    colors={['rgba(244,249,248,0)', 'rgba(244,249,248,0.6)', Colors.light.background]}
                     locations={[0, 0.6, 1]}
                     style={styles.fadeGradientBottom}
                 />

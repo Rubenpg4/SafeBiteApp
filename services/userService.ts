@@ -133,6 +133,17 @@ export const addScanToHistory = async (
 };
 
 /**
+ * Elimina un escaneo del historial del usuario
+ */
+export const deleteScanFromHistory = async (
+    uid: string,
+    scanId: string
+): Promise<void> => {
+    const docRef = doc(db, USERS_COLLECTION, uid, SCAN_HISTORY_SUBCOLLECTION, scanId);
+    await deleteDoc(docRef);
+};
+
+/**
  * Obtiene el historial de escaneos del usuario
  * @param uid - ID del usuario
  * @param maxItems - Número máximo de items a obtener (default: 50)

@@ -4,7 +4,7 @@
 
 import { ALLERGENS_DATA } from '@/constants/allergens';
 import { createProduct, getOrCreateProduct, getProductFromCache, ProductCreateData } from '@/services/productService';
-import { addScanToHistory, getScanHistory } from '@/services/userService';
+import { addScanToHistory, deleteScanFromHistory, getScanHistory } from '@/services/userService';
 import { Allergen, Product, ProductHistoryState } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
@@ -158,13 +158,25 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
         });
     }, []);
 
-    const removeProduct = useCallback((productId: string) => {
+    const removeProduct = useCallback(async (productId: string) => {
+        // 1. Eliminación optimista de la UI
         setProducts(prev => {
             const updated = prev.filter(p => p.id !== productId);
             saveHistory(updated);
             return updated;
         });
-    }, []);
+
+        // 2. Si es usuario autenticado, borrar de Firestore
+        if (user?.uid && !user.isAnonymous) {
+            try {
+                await deleteScanFromHistory(user.uid, productId);
+                console.log('[ProductHistory] Product deleted from Firestore:', productId);
+            } catch (error) {
+                console.error('[ProductHistory] Error deleting from Firestore:', error);
+                // Opcional: Revertir cambios en UI si falla, o mostrar toast
+            }
+        }
+    }, [user]);
 
     const clearHistory = useCallback(() => {
         setProducts([]);
@@ -245,7 +257,7 @@ export const ProductHistoryProvider: React.FC<{ children: React.ReactNode }> = (
         setError(null);
         try {
             const response = await fetch(
-                `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1`
+                `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&fields=code,product_name,brands,image_front_url,image_url,ingredients_text,allergens_tags,_id&page_size=10`
             );
             const data = await response.json();
 

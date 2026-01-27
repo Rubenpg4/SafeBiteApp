@@ -70,14 +70,14 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding/index" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="onboarding/allergies" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="onboarding/index" options={{ headerShown: false, animation: 'none', gestureEnabled: false }} />
+        <Stack.Screen name="onboarding/allergies" options={{ headerShown: false, animation: 'none', gestureEnabled: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false, animation: 'none', gestureEnabled: false }} />
         <Stack.Screen name="register" options={{ headerShown: false, animation: 'none' }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="safe_screen" options={{ headerShown: false }} />
-        <Stack.Screen name="danger_screen" options={{ headerShown: false }} />
-        <Stack.Screen name="guest_warning_screen" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="safe_screen" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="danger_screen" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="guest_warning_screen" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="search_screen" options={{ headerShown: false }} />
 
         <Stack.Screen name="profile_screen" options={{ headerShown: false }} />
