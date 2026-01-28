@@ -7,7 +7,6 @@ import { Colors } from "@/constants";
 import { router, useLocalSearchParams } from "expo-router";
 
 export default function GuestWarningScreen() {
-    // Use a yellow/gold color for the warning theme
     const warningColor = "#E8BB62";
     const backgroundColor = Colors["light"].background;
 
@@ -21,12 +20,10 @@ export default function GuestWarningScreen() {
         title?: string;
     }>();
 
-    // Parse allergens from JSON parameter
     const parsedAllergens: Allergen[] = params.allergens
         ? JSON.parse(params.allergens)
         : [];
 
-    // Construct product with received data or defaults
     const product: Product = {
         name: params.productName || "Producto desconocido",
         brand: params.productBrand || "Marca desconocida",

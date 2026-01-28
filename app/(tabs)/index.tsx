@@ -30,7 +30,6 @@ export default function HomeScreen() {
 
   const colors = Colors['light'];
 
-  // Obtener el primer nombre del usuario
   const firstName = user?.isAnonymous ? 'Invitado' : (user?.displayName?.split(' ')[0] || 'Usuario');
 
   const showToast = (message: string) => {
@@ -93,7 +92,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Componente para estado vacío
   const EmptyState = () => (
     <View style={styles.emptyStateContainer}>
       <View style={styles.emptyIconContainer}>
@@ -109,12 +107,10 @@ export default function HomeScreen() {
     </View>
   );
 
-  // Filtrar productos: si el switch está OFF, mostrar solo los aptos (verdes)
   const filteredProducts = showAllProducts
     ? products
     : products.filter(p => p.isSafe);
 
-  // Determina si mostrar la lista o el estado vacío
   const hasProducts = filteredProducts.length > 0;
 
   return (
@@ -260,7 +256,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.light.text,
   },
-  // Estilos del Empty State
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -291,7 +286,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  // Estilos del botón de escanear
   scanButton: {
     position: 'absolute',
     right: Spacing.lg,
@@ -309,7 +303,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
 
-  // Estilos del Hidden State
   hiddenStateContainer: {
     flex: 1,
     justifyContent: 'center',

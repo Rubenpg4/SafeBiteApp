@@ -93,7 +93,7 @@ export const DaySection: React.FC<DaySectionProps> = ({ title }) => (
 const styles = StyleSheet.create({
     listContent: {
         paddingTop: Spacing.sm,
-        paddingBottom: Spacing.xxl * 4, // Espacio para el botón flotante
+        paddingBottom: Spacing.xxl * 4,
     },
     sectionHeader: {
         paddingHorizontal: Spacing.lg,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     deleteButtonContainer: {
         marginHorizontal: Spacing.lg,
         marginBottom: Spacing.md,
-        paddingTop: 14, // Coincidir con ProductCard wrapper
+        paddingTop: 14,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,

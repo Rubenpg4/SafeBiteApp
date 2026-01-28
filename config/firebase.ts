@@ -5,7 +5,6 @@ import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Configuración de Firebase para SafeBite
 const firebaseConfig = {
     apiKey: "REMOVED_API_KEY",
     authDomain: "safebite-f4915.firebaseapp.com",
@@ -16,15 +15,12 @@ const firebaseConfig = {
     measurementId: "G-4P460XJ7P8"
 };
 
-// Inicializar Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Inicializar Auth
 const auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
 });
 
-// Inicializar Firestore y Storage
 const db = getFirestore(app);
 const storage = getStorage(app);
 

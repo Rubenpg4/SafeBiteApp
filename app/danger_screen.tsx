@@ -17,12 +17,10 @@ export default function DangerScreen() {
     barcode?: string;
   }>();
 
-  // Parsear alérgenos del parámetro JSON
   const parsedAllergens: Allergen[] = params.allergens
     ? JSON.parse(params.allergens)
     : [];
 
-  // Construir el producto con los datos recibidos o usar valores por defecto
   const product: Product = {
     name: params.productName || "Producto desconocido",
     brand: params.productBrand || "Marca desconocida",
@@ -34,7 +32,6 @@ export default function DangerScreen() {
       : ["Sin información de ingredientes"],
   };
 
-  // Usar los alérgenos peligrosos coinciden
   const allergens: Allergen[] = parsedAllergens;
 
   const handleScanAnother = () => {

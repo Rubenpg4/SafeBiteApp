@@ -30,17 +30,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-// Hook para usar el contexto
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [hasCompletedAllergiesSetup, setHasCompletedAllergiesSetup] = useState(false);
-    // Flag para evitar redirección durante el proceso de registro
     const isRegisteringRef = useRef(false);
 
-    // Verificar si el usuario ya completó la configuración de alergias
     const checkAllergiesSetup = async (userId?: string): Promise<boolean> => {
         try {
             const uid = userId || user?.uid;
@@ -57,7 +54,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    // Marcar la configuración de alergias como completada
     const setAllergiesSetupComplete = async (): Promise<void> => {
         try {
             if (!user?.uid) return;
@@ -70,24 +66,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     useEffect(() => {
-        // Escuchar cambios en la autenticación
-        // Solo considerar como usuario logueado si el email está verificado
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            // Si estamos en proceso de registro, ignorar este evento
             if (isRegisteringRef.current) {
                 setLoading(false);
                 return;
             }
 
             if (firebaseUser) {
-                // Usuario autenticado (email verificado O anónimo)
                 if (firebaseUser.emailVerified || firebaseUser.isAnonymous) {
                     setUser(firebaseUser);
-                    // Verificar si ya completó la configuración de alergias (solo para no anónimos)
                     if (!firebaseUser.isAnonymous) {
                         await checkAllergiesSetup(firebaseUser.uid);
                     } else {
-                        // Para invitados, siempre "completo" para que no pida login, pero manejado por lógica de UI
                         setHasCompletedAllergiesSetup(true);
                     }
                 } else {
@@ -105,22 +95,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signIn = async (email: string, pass: string) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, pass);
 
-        // Verificar si el email está verificado
         if (!userCredential.user.emailVerified) {
-            // Cerrar sesión inmediatamente
             await firebaseSignOut(auth);
-            // Lanzar error personalizado
             const error = new Error('Email no verificado');
             (error as any).code = 'auth/email-not-verified';
             throw error;
         }
 
-        // Verificar configuración de alergias después del login
         await checkAllergiesSetup(userCredential.user.uid);
     };
 
     const signUp = async (email: string, pass: string, name: string) => {
-        // Activar flag para evitar redirección
         isRegisteringRef.current = true;
 
         try {
@@ -128,22 +113,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (userCredential.user) {
                 await updateProfile(userCredential.user, { displayName: name });
 
-                // Crear documento de usuario en Firestore
                 try {
                     console.log('[SafeBite] Creating Firestore document for user:', userCredential.user.uid);
                     await createUserDocument(userCredential.user.uid, []);
                     console.log('[SafeBite] Firestore document created successfully');
                 } catch (firestoreError) {
                     console.error('[SafeBite] Error creating Firestore document:', firestoreError);
-                    // No lanzar error - permitir que el registro continúe
                 }
 
                 await sendEmailVerification(userCredential.user);
-                // Cerrar sesión inmediatamente después del registro
                 await firebaseSignOut(auth);
             }
         } finally {
-            // Desactivar flag después de completar todo
             isRegisteringRef.current = false;
         }
     };
